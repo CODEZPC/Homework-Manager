@@ -255,7 +255,7 @@ class HomeworkTool:
             tk,
             fg=COLOR,
         )
-        self.ui_title.place(x=10, y=10)
+        self.ui_title.place(x=10, y=5)
         self.ui_top_exit = Button(
             tk,
             text="退出",
