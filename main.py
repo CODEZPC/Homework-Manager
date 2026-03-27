@@ -86,10 +86,10 @@ class HomeworkTool:
         tk.option_add("*Font", ("JetBrains Mono", 18))
         self.load_ui()
         # 列表初始化
-        self.homework = []  # 作业UI
-        self.upload = []  # 时间UI
-        self.page = []  # 作业内容存储
-        self.sub = [
+        self.homework_list = []  # 作业UI
+        self.time_list = []  # 时间UI
+        self.homework_page_list = []  # 作业内容存储
+        self.subject_codes = [
             "C",
             "M",
             "E",
@@ -103,7 +103,7 @@ class HomeworkTool:
             "B1",
             "OTH",
         ]
-        self.show = [
+        self.subject_display_names = [
             "语文 ",
             "数学 ",
             "英语 ",
@@ -117,7 +117,7 @@ class HomeworkTool:
             "生物 D1",
             "其他",
         ]
-        self.schedule = []  # 计划的tk.after
+        self.reminder_schedule = []  # 计划的tk.after
         self.draw_homework()
         tk.bind("<Motion>", self.mouse_move)
         self.tick = 0
@@ -126,9 +126,9 @@ class HomeworkTool:
     def on_tick(self):
         if self.tick > 2:
             try:
-                self.exit.place_forget()
-                self.add.place_forget()
-                self.refresh.place_forget()
+                self.ui_top_exit.place_forget()
+                self.ui_top_add.place_forget()
+                self.ui_top_refresh.place_forget()
             except:
                 pass
         if self.tick > 300:
@@ -140,9 +140,9 @@ class HomeworkTool:
 
     def draw_homework(self):
         """显示作业列表"""
-        for i in self.schedule:
+        for i in self.reminder_schedule:
             tk.after_cancel(i)
-        for i in self.homework:
+        for i in self.homework_list:
             i.place_forget()
         with open("homework.json", "r", encoding="utf-8") as f:
             self.data = json.load(f)
@@ -159,23 +159,23 @@ class HomeworkTool:
         except Exception:
             pass
 
-        self.homework = []
-        self.page = []
-        for i, j in enumerate(self.sub):
+        self.homework_list = []
+        self.homework_page_list = []
+        for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
-                content = self.show[i] + ":" + k["content"]
+                content = self.subject_display_names[i] + ":" + k["content"]
                 content = charater_count(content)
-                self.page.append(content)
-                self.homework.append(
+                self.homework_page_list.append(content)
+                self.homework_list.append(
                     Label(
                         tk,
                         text=content[0],
                     )
                 )
                 if analyze_time(k["time"]) == "时间已过":
-                    self.homework[-1].config(fg=COLOR)
-        inv = 35 if len(self.homework) < 10 else 30
-        for idx, widget in enumerate(self.homework):
+                    self.homework_list[-1].config(fg=COLOR)
+        inv = 35 if len(self.homework_list) < 10 else 30
+        for idx, widget in enumerate(self.homework_list):
             widget.place(x=45, y=40 + idx * inv)
 
         self.upload_track()
@@ -185,14 +185,14 @@ class HomeworkTool:
         """每分钟更新一次时间"""
         if aid != -1:
             tk.after_cancel(aid)
-            self.schedule.remove(aid)
+            self.reminder_schedule.remove(aid)
 
-        for i in self.upload:
+        for i in self.time_list:
             i.place_forget()
-        self.upload = []
-        for i, j in enumerate(self.sub):
+        self.time_list = []
+        for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
-                self.upload.append(
+                self.time_list.append(
                     Label(
                         tk,
                         text=analyze_time(k["time"]),
@@ -201,48 +201,48 @@ class HomeworkTool:
                         anchor="e",
                     )
                 )
-                tx = self.upload[-1].cget("text")
-                if tx == "现在收":
-                    self.upload[-1].config(fg="#23272E", bg="#C8C8C8")
+                time_text = self.time_list[-1].cget("text")
+                if time_text == "现在收":
+                    self.time_list[-1].config(fg="#23272E", bg="#C8C8C8")
                 elif (
-                    "后天" not in tx
-                    and "周" not in tx
-                    and "/" not in tx
-                    and "时间" not in tx
-                    and "不" not in tx
+                    "后天" not in time_text
+                    and "周" not in time_text
+                    and "/" not in time_text
+                    and "时间" not in time_text
+                    and "不" not in time_text
                 ):
-                    self.upload[-1].config(bg="#23272E", fg="#C8C8C8")
+                    self.time_list[-1].config(bg="#23272E", fg="#C8C8C8")
                 else:
-                    self.upload[-1].config(bg="#23272E", fg=COLOR)
-        inv = 35 if len(self.upload) < 10 else 30
-        for idx, widget in enumerate(self.upload):
+                    self.time_list[-1].config(bg="#23272E", fg=COLOR)
+        inv = 35 if len(self.time_list) < 10 else 30
+        for idx, widget in enumerate(self.time_list):
             widget.place(x=1075, y=40 + idx * inv)
         now = time.localtime()
         remaining_seconds = 60 - now.tm_sec
         aid = tk.after(remaining_seconds * 1000, lambda: self.upload_track(aid))
-        self.schedule.append(aid)
+        self.reminder_schedule.append(aid)
 
     def roll_show(self):
-        for i, j in enumerate(self.homework):
-            j.config(text=self.page[i][0])
-            self.page[i].append(self.page[i].pop(0))
+        for i, j in enumerate(self.homework_list):
+            j.config(text=self.homework_page_list[i][0])
+            self.homework_page_list[i].append(self.homework_page_list[i].pop(0))
         tk.after(1, self.roll_title)
 
     def roll_title(self, arg=21, aid=-1):
         if aid != -1:
             tk.after_cancel(aid)
-            self.schedule.remove(aid)
+            self.reminder_schedule.remove(aid)
 
         if arg == -1:
             tk.after(1, self.roll_show)
             return
-        self.title.config(
+        self.ui_title.config(
             text=time.strftime(
                 f"%H:%M:%S R{str(arg).zfill(2)} T{str(self.tick).zfill(3)}" if DEBUG else f"%H:%M:%S {VERSION}", time.localtime(time.time())
             )
         )
         aid = tk.after(200, self.roll_title, arg - 1, aid)
-        self.schedule.append(aid)
+        self.reminder_schedule.append(aid)
 
     def load_ui(self):
         tk.title("作业管理器")
@@ -251,12 +251,12 @@ class HomeworkTool:
         tk.config(bg="#23272E")
         tk.resizable(False, False)
 
-        self.title = Label(
+        self.ui_title = Label(
             tk,
             fg=COLOR,
         )
-        self.title.place(x=10, y=10)
-        self.exit = Button(
+        self.ui_title.place(x=10, y=10)
+        self.ui_top_exit = Button(
             tk,
             text="退出",
             fg=COLOR,
@@ -264,7 +264,7 @@ class HomeworkTool:
             relief=FLAT,
             command=sys.exit,
         )
-        self.refresh = Button(
+        self.ui_top_refresh = Button(
             tk,
             text="刷新",
             fg=COLOR,
@@ -272,7 +272,7 @@ class HomeworkTool:
             relief=FLAT,
             command=self.draw_homework,
         )
-        self.add = Button(
+        self.ui_top_add = Button(
             tk,
             text="新建",
             fg=COLOR,
@@ -280,7 +280,7 @@ class HomeworkTool:
             relief=FLAT,
             command=self.new_homework,
         )
-        self.clear = Button(
+        self.ui_top_clear = Button(
             tk,
             text="清理",
             fg=COLOR,
@@ -289,10 +289,10 @@ class HomeworkTool:
             command=self.clear_homework,
         )
 
-        self.delete = Button(
+        self.ui_side_delete = Button(
             tk, text="×", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
         )
-        self.edit = Button(
+        self.ui_side_edit = Button(
             tk, text="E", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
         )
     
@@ -300,7 +300,7 @@ class HomeworkTool:
         # 清理所有“时间已过”的作业（时间戳非0且早于当前时间10分钟以前）
         removed = 0
         try:
-            for key in self.sub:
+            for key in self.subject_codes:
                 new_list = []
                 for item in self.data.get(key, []):
                     try:
@@ -333,7 +333,7 @@ class HomeworkTool:
         deadline_timestamp=None,
         replace_target=None,
     ):
-        if len(self.homework) >= 22:
+        if len(self.homework_list) >= 22:
             messagebox.showerror("超过上限", "作业数量已达上限")
             return
         new_window = Toplevel(tk)
@@ -346,11 +346,11 @@ class HomeworkTool:
 
         Label(new_window, text="科目", bg="#23272E").grid(row=1, column=1)
         subject_var = StringVar(new_window)
-        if subject_index is not None and 0 <= subject_index < len(self.show):
-            subject_var.set(self.show[subject_index])
+        if subject_index is not None and 0 <= subject_index < len(self.subject_display_names):
+            subject_var.set(self.subject_display_names[subject_index])
         else:
-            subject_var.set(self.show[0])
-        OptionMenu(new_window, subject_var, *self.show).grid(row=1, column=2)
+            subject_var.set(self.subject_display_names[0])
+        OptionMenu(new_window, subject_var, *self.subject_display_names).grid(row=1, column=2)
 
         Label(new_window, text="内容", bg="#23272E").grid(row=2, column=1)
         content_entry = Entry(new_window, width=60, relief=RIDGE)
@@ -379,8 +379,8 @@ class HomeworkTool:
         time_entry.grid(row=3, column=2)
 
         def submit():
-            new_subject_index = self.show.index(subject_var.get())
-            new_subject_key = self.sub[new_subject_index]
+            new_subject_index = self.subject_display_names.index(subject_var.get())
+            new_subject_key = self.subject_codes[new_subject_index]
             content = content_entry.get()
             deadline_str = time_entry.get()
             try:
@@ -444,7 +444,7 @@ class HomeworkTool:
         if not messagebox.askyesno("提示", "确定要删除吗？"):
             return
         count = 0
-        for i in self.sub:
+        for i in self.subject_codes:
             for j in self.data[i]:
                 if count == index:
                     self.data[i].remove(j)
@@ -456,11 +456,11 @@ class HomeworkTool:
 
     def edit_homework(self, index):
         count = 0
-        for subject_key in self.sub:
+        for subject_key in self.subject_codes:
             for j in self.data[subject_key]:
                 if count == index:
                     try:
-                        subject_index = self.sub.index(subject_key)
+                        subject_index = self.subject_codes.index(subject_key)
                     except ValueError:
                         subject_index = 0
                     content_text = j.get("content", "")
@@ -480,26 +480,26 @@ class HomeworkTool:
         x = event.x_root - tk.winfo_rootx()
         y = event.y_root - tk.winfo_rooty()
 
-        inv = 35 if len(self.homework) < 10 else 30
+        inv = 35 if len(self.homework_list) < 10 else 30
         self.arg = int((y - 40) // inv)
-        if self.arg >= len(self.homework):
+        if self.arg >= len(self.homework_list):
             self.arg = -1
         # self.title.config(text=f"鼠标位置：({x}, {y}),{self.arg}")
 
-        self.exit.place(x=1225, y=0)
-        self.refresh.place(x=1169, y=0)
-        self.add.place(x=1113, y=0)
-        self.clear.place(x=1057, y=0)
+        self.ui_top_exit.place(x=1225, y=0)
+        self.ui_top_refresh.place(x=1169, y=0)
+        self.ui_top_add.place(x=1113, y=0)
+        self.ui_top_clear.place(x=1057, y=0)
 
         if self.arg <= -1:
-            self.edit.place_forget()
-            self.delete.place_forget()
+            self.ui_side_edit.place_forget()
+            self.ui_side_delete.place_forget()
             return
         
-        self.delete.place(x=5, y=45 + self.arg * inv)
-        self.edit.place(x=25, y=45 + self.arg * inv)
-        self.delete.config(command=lambda: self.delete_homework(self.arg))
-        self.edit.config(command=lambda: self.edit_homework(self.arg))
+        self.ui_side_delete.place(x=5, y=45 + self.arg * inv)
+        self.ui_side_edit.place(x=25, y=45 + self.arg * inv)
+        self.ui_side_delete.config(command=lambda: self.delete_homework(self.arg))
+        self.ui_side_edit.config(command=lambda: self.edit_homework(self.arg))
 
 
 if __name__ == "__main__":
