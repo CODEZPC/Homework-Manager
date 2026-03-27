@@ -262,7 +262,7 @@ class HomeworkTool:
             fg=COLOR,
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
-            command=sys.exit,
+            command=self.exit,
         )
         self.ui_top_refresh = Button(
             tk,
@@ -500,6 +500,9 @@ class HomeworkTool:
         self.ui_side_edit.place(x=25, y=45 + self.arg * inv)
         self.ui_side_delete.config(command=lambda: self.delete_homework(self.arg))
         self.ui_side_edit.config(command=lambda: self.edit_homework(self.arg))
+    
+    def exit(self):
+        sys.exit(0)
 
 
 if __name__ == "__main__":
