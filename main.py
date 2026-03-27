@@ -9,7 +9,7 @@ import msvcrt
 
 COLOR = "#767F89"
 DEBUG = False
-VERSION = "1.3.4"
+VERSION = "1.3.5"
 
 
 def analyze_time(timestamp):
@@ -129,6 +129,9 @@ class HomeworkTool:
                 self.ui_top_exit.place_forget()
                 self.ui_top_add.place_forget()
                 self.ui_top_refresh.place_forget()
+                self.ui_top_clear.place_forget()
+                self.ui_side_delete.place_forget()
+                self.ui_side_edit.place_forget()
             except:
                 pass
         if self.tick > 300:
