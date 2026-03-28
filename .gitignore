@@ -5,3 +5,4 @@ main.spec
 homework.lock
 main.exe
 homework.json
+/__pycache__
