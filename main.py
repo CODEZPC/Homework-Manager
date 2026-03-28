@@ -4,74 +4,12 @@ import mouse
 import json
 import sys
 import time
-import os
 import msvcrt
+import homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
 VERSION = "1.3.5"
-
-
-def analyze_time(timestamp):
-    we = ["日", "一", "二", "三", "四", "五", "六"]
-    time_day_start = time.mktime(
-        time.strptime(
-            time.strftime("%Y-%m-%d", time.localtime(time.time())) + " 00:00:00",
-            "%Y-%m-%d %H:%M:%S",
-        )
-    )
-    time_now = time.time()
-    week_now = time.strftime("%w", time.localtime(time_now))
-    t = time.strftime("%H:%M", time.localtime(timestamp))
-    w = time.strftime("%w", time.localtime(timestamp))
-    if timestamp == 0:
-        return "暂时不收"
-    elif timestamp < time.time() - 600:
-        return "时间已过"
-    elif timestamp < time.time():
-        return "现在收"
-    elif timestamp < time_day_start + 86400:
-        return f"{t}收"
-    elif timestamp < time_day_start + 86400 * 2:
-        return f"明天{t}收"
-    elif timestamp < time_day_start + 86400 * 3:
-        return f"后天{t}收"
-    elif timestamp < time_day_start + 86400 * (8 - int(week_now)):
-        return f"周{we[int(w)]}{t}收"
-    elif timestamp < time_day_start + 86400 * (15 - int(week_now)):
-        return f"下周{we[int(w)]}{t}收"
-    else:
-        return f"{time.strftime('%Y/%m/%d', time.localtime(timestamp))}收"
-
-
-def charater_count(string):
-    count = 0
-    start = 0
-    page = []
-    eng = "~!@#$%^&*()_+`1234567890-={}|[]\\:\"';<>?,./QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm "
-    for i, j in enumerate(string):
-        if j in eng:
-            count += 1
-        else:
-            count += 1.666667
-        if 70 <= count <= 71 and i <= len(string) - 1:
-            if string[i + 1] not in eng:
-                page.append(string[start : i + 1])
-                start = i + 1
-                count = 0
-        elif 70 <= count <= 71 and i == len(string) - 1:
-            page.append(string[start : i + 1])
-            start = i + 1
-            count = 0
-        elif count >= 71:
-            page.append(string[start : i + 1])
-            start = i + 1
-            count = 0
-    page.append(string[start:])
-    if page[-1] == "":
-        page.pop()
-    return page
-
 
 def getwidth(object):
     tk.update_idletasks()
@@ -89,35 +27,10 @@ class HomeworkTool:
         self.homework_list = []  # 作业UI
         self.time_list = []  # 时间UI
         self.homework_page_list = []  # 作业内容存储
-        self.subject_codes = [
-            "C",
-            "M",
-            "E",
-            "P1",
-            "H1",
-            "G1",
-            "PH1",
-            "PH2",
-            "CH1",
-            "CH2",
-            "B1",
-            "OTH",
-        ]
-        self.subject_display_names = [
-            "语文 ",
-            "数学 ",
-            "英语 ",
-            "政治 D1",
-            "历史 D1",
-            "地理 D1",
-            "物理 D1",
-            "物理 D2",
-            "化学 D1",
-            "化学 D2",
-            "生物 D1",
-            "其他",
-        ]
+        self.subject_codes = homeworkfunc.SUBJECT_CODES
+        self.subject_display_names = homeworkfunc.SUBJECT_DISPLAY_NAMES
         self.reminder_schedule = []  # 计划的tk.after
+        homeworkfunc.resource_check(self.subject_codes)
         self.draw_homework()
         tk.bind("<Motion>", self.mouse_move)
         self.tick = 0
@@ -167,7 +80,7 @@ class HomeworkTool:
         for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
                 content = self.subject_display_names[i] + ":" + k["content"]
-                content = charater_count(content)
+                content = homeworkfunc.charater_count(content)
                 self.homework_page_list.append(content)
                 self.homework_list.append(
                     Label(
@@ -175,7 +88,7 @@ class HomeworkTool:
                         text=content[0],
                     )
                 )
-                if analyze_time(k["time"]) == "时间已过":
+                if homeworkfunc.analyze_time(k["time"]) == "时间已过":
                     self.homework_list[-1].config(fg=COLOR)
         inv = 35 if len(self.homework_list) < 10 else 30
         for idx, widget in enumerate(self.homework_list):
@@ -198,7 +111,7 @@ class HomeworkTool:
                 self.time_list.append(
                     Label(
                         tk,
-                        text=analyze_time(k["time"]),
+                        text=homeworkfunc.analyze_time(k["time"]),
                         width=13,
                         justify="right",
                         anchor="e",
