@@ -178,10 +178,10 @@ class HomeworkTool:
         for idx, widget in enumerate(self.homework_list):
             widget.place(x=45, y=40 + idx * inv)
 
-        self.upload_track()
+        self.upload_time_display()
         tk.after(1, self.roll_show)
 
-    def upload_track(self, aid=-1):
+    def upload_time_display(self, aid=-1):
         """每分钟更新一次时间"""
         if aid != -1:
             tk.after_cancel(aid)
@@ -219,7 +219,7 @@ class HomeworkTool:
             widget.place(x=1075, y=40 + idx * inv)
         now = time.localtime()
         remaining_seconds = 60 - now.tm_sec
-        aid = tk.after(remaining_seconds * 1000, lambda: self.upload_track(aid))
+        aid = tk.after(remaining_seconds * 1000, lambda: self.upload_time_display(aid))
         self.reminder_schedule.append(aid)
 
     def roll_show(self):
