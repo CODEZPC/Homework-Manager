@@ -477,7 +477,7 @@ class HomeworkTool:
             self.arg = -1
         # self.title.config(text=f"鼠标位置：({x}, {y}),{self.arg}")
 
-        self.ui_top_exit.place(x=self.POSTION_TOP_EXIT_X, y=0)
+        self.ui_top_exit.place(x=self.POSITION_TOP_EXIT_X, y=0)
         self.ui_top_refresh.place(x=self.POSITION_TOP_REFRESH_X, y=0)
         self.ui_top_add.place(x=self.POSITION_TOP_ADD_X, y=0)
         self.ui_top_clear.place(x=self.POSITION_TOP_CLEAR_X, y=0)
