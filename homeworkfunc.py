@@ -1,5 +1,6 @@
 import time
 import json
+from tkinter import *
 
 SUBJECT_CODES = [
     "C",
@@ -48,23 +49,23 @@ def analyze_time(timestamp):
     t = time.strftime("%H:%M", time.localtime(timestamp))
     w = time.strftime("%w", time.localtime(timestamp))
     if timestamp == 0:
-        return "暂时不收"
+        return ("暂时不收", 0)
     elif timestamp < time.time() - 600:
-        return "时间已过"
+        return ("时间已过", -1)
     elif timestamp < time.time():
-        return "现在收"
+        return ("现在收", 2)
     elif timestamp < time_day_start + 86400:
-        return f"{t}收"
+        return (f"{t}收", 1)
     elif timestamp < time_day_start + 86400 * 2:
-        return f"明天{t}收"
+        return (f"明天{t}收", 1)
     elif timestamp < time_day_start + 86400 * 3:
-        return f"后天{t}收"
+        return (f"后天{t}收", 0)
     elif timestamp < time_day_start + 86400 * (8 - int(week_now)):
-        return f"周{we[int(w)]}{t}收"
+        return (f"周{we[int(w)]}{t}收", 0)
     elif timestamp < time_day_start + 86400 * (15 - int(week_now)):
-        return f"下周{we[int(w)]}{t}收"
+        return (f"下周{we[int(w)]}{t}收", 0)
     else:
-        return f"{time.strftime('%Y/%m/%d', time.localtime(timestamp))}收"
+        return (f"{time.strftime('%Y/%m/%d', time.localtime(timestamp))}收", 0)
 
 
 def charater_count(string, limit=70):
@@ -97,6 +98,15 @@ def charater_count(string, limit=70):
     if page[-1] == "":
         page.pop()
     return page
+
+
+def getwidth(object, tk):
+    """
+    返回给定控件的当前像素宽度（调用前请确保已有 `tk` 根）。
+    注意：函数依赖全局变量 `tk`。
+    """
+    tk.update_idletasks()
+    return object.winfo_width()
 
 
 def resource_check(subject_codes):

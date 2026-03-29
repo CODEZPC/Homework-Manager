@@ -14,7 +14,7 @@ import homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
-VERSION = "1.3.5"
+VERSION = "1.3.6"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -141,7 +141,7 @@ class HomeworkTool:
                         text=content[0],
                     )
                 )
-                if homeworkfunc.analyze_time(k["time"]) == "时间已过":
+                if homeworkfunc.analyze_time(k["time"])[1] == -1:
                     self.homework_list[-1].config(fg=COLOR)
         inv = 35 if len(self.homework_list) < 10 else 30
         for idx, widget in enumerate(self.homework_list):
@@ -175,25 +175,19 @@ class HomeworkTool:
         # 重新生成时间显示
         for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
+                time_status = homeworkfunc.analyze_time(k["time"])
                 self.time_list.append(
                     Label(
                         tk,
-                        text=homeworkfunc.analyze_time(k["time"]),
+                        text=time_status[0],
                         width=13,
                         justify="right",
                         anchor="e",
                     )
                 )
-                time_text = self.time_list[-1].cget("text")
-                if time_text == "现在收":
+                if time_status[1] == 2:
                     self.time_list[-1].config(fg="#23272E", bg="#C8C8C8")
-                elif (
-                    "后天" not in time_text
-                    and "周" not in time_text
-                    and "/" not in time_text
-                    and "时间" not in time_text
-                    and "不" not in time_text
-                ):
+                elif time_status[1] == 1:
                     self.time_list[-1].config(bg="#23272E", fg="#C8C8C8")
                 else:
                     self.time_list[-1].config(bg="#23272E", fg=COLOR)
