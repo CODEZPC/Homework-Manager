@@ -1,131 +1,78 @@
 from tkinter import *
 from tkinter import messagebox
-import mouse
+
+try:
+    import mouse
+except Exception:
+    # 在无法导入或权限受限时降级为 None，避免程序崩溃
+    mouse = None
 import json
 import sys
 import time
-import os
 import msvcrt
+import homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
-VERSION = "1.3.5"
+VERSION = "1.3.6"
 
 
-def analyze_time(timestamp):
-    we = ["日", "一", "二", "三", "四", "五", "六"]
-    time_day_start = time.mktime(
-        time.strptime(
-            time.strftime("%Y-%m-%d", time.localtime(time.time())) + " 00:00:00",
-            "%Y-%m-%d %H:%M:%S",
-        )
-    )
-    time_now = time.time()
-    week_now = time.strftime("%w", time.localtime(time_now))
-    t = time.strftime("%H:%M", time.localtime(timestamp))
-    w = time.strftime("%w", time.localtime(timestamp))
-    if timestamp == 0:
-        return "暂时不收"
-    elif timestamp < time.time() - 600:
-        return "时间已过"
-    elif timestamp < time.time():
-        return "现在收"
-    elif timestamp < time_day_start + 86400:
-        return f"{t}收"
-    elif timestamp < time_day_start + 86400 * 2:
-        return f"明天{t}收"
-    elif timestamp < time_day_start + 86400 * 3:
-        return f"后天{t}收"
-    elif timestamp < time_day_start + 86400 * (8 - int(week_now)):
-        return f"周{we[int(w)]}{t}收"
-    elif timestamp < time_day_start + 86400 * (15 - int(week_now)):
-        return f"下周{we[int(w)]}{t}收"
-    else:
-        return f"{time.strftime('%Y/%m/%d', time.localtime(timestamp))}收"
-
-
-def charater_count(string):
-    count = 0
-    start = 0
-    page = []
-    eng = "~!@#$%^&*()_+`1234567890-={}|[]\\:\"';<>?,./QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm "
-    for i, j in enumerate(string):
-        if j in eng:
-            count += 1
-        else:
-            count += 1.666667
-        if 70 <= count <= 71 and i <= len(string) - 1:
-            if string[i + 1] not in eng:
-                page.append(string[start : i + 1])
-                start = i + 1
-                count = 0
-        elif 70 <= count <= 71 and i == len(string) - 1:
-            page.append(string[start : i + 1])
-            start = i + 1
-            count = 0
-        elif count >= 71:
-            page.append(string[start : i + 1])
-            start = i + 1
-            count = 0
-    page.append(string[start:])
-    if page[-1] == "":
-        page.pop()
-    return page
-
-
-def getwidth(object):
-    tk.update_idletasks()
-    return object.winfo_width()
+def acquire_lock(lock_path="homework.lock"):
+    """
+    尝试获取一个简单的文件锁（Windows 下使用 msvcrt），
+    成功返回打开的文件对象（必须保持引用以维持锁），失败返回 None。
+    """
+    try:
+        lock_file = open(lock_path, "w")
+        msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+        return lock_file
+    except OSError:
+        return None
 
 
 class HomeworkTool:
     def __init__(self):
+
         # 默认UI配置
         tk.option_add("*Background", "#23272E")
         tk.option_add("*Foreground", "#C8C8C8")
         tk.option_add("*Font", ("JetBrains Mono", 18))
         self.load_ui()
+
         # 列表初始化
         self.homework_list = []  # 作业UI
         self.time_list = []  # 时间UI
         self.homework_page_list = []  # 作业内容存储
-        self.subject_codes = [
-            "C",
-            "M",
-            "E",
-            "P1",
-            "H1",
-            "G1",
-            "PH1",
-            "PH2",
-            "CH1",
-            "CH2",
-            "B1",
-            "OTH",
-        ]
-        self.subject_display_names = [
-            "语文 ",
-            "数学 ",
-            "英语 ",
-            "政治 D1",
-            "历史 D1",
-            "地理 D1",
-            "物理 D1",
-            "物理 D2",
-            "化学 D1",
-            "化学 D2",
-            "生物 D1",
-            "其他",
-        ]
+        self.subject_codes = homeworkfunc.SUBJECT_CODES
+        self.subject_display_names = homeworkfunc.SUBJECT_DISPLAY_NAMES
         self.reminder_schedule = []  # 计划的tk.after
+
+        # 各类定时器的 id（用于取消），初始化为 None
+        self._upload_aid = None
+        self._title_aid = None
+
+        # 校验资源完整性
+        homeworkfunc.resource_check(self.subject_codes)
+
+        # 显示
         self.draw_homework()
+
+        # 鼠标移动事件绑定（用于显示/隐藏按钮）
         tk.bind("<Motion>", self.mouse_move)
+
+        # 自动隐藏按钮的计时器
         self.tick = 0
         tk.after(1, self.on_tick)
 
     def on_tick(self):
+        """
+        每秒调用一次，自动隐藏按钮并防止锁屏。
+        """
+
+        # 3秒
         if self.tick > 2:
             try:
+                # 隐藏UI按钮
                 self.ui_top_exit.place_forget()
                 self.ui_top_add.place_forget()
                 self.ui_top_refresh.place_forget()
@@ -134,22 +81,38 @@ class HomeworkTool:
                 self.ui_side_edit.place_forget()
             except:
                 pass
+
+        # 5分钟
         if self.tick > 300:
-            mouse.move(400, 1200)
-            mouse.click()
+            # 自动防止锁屏/进入休眠的兼容性处理（在无法使用 mouse 时安全跳过）
+            if mouse:
+                try:
+                    mouse.move(400, 1200)
+                    mouse.click()
+                except Exception:
+                    # 鼠标库可能在某些环境中不可用或权限受限，忽略异常
+                    pass
             self.tick = 3
         self.tick += 1
+
+        # 继续调用自己
         tk.after(1000, self.on_tick)
 
     def draw_homework(self):
         """显示作业列表"""
+
+        # 取消之前计划的提醒（如果有）
         for i in self.reminder_schedule:
             tk.after_cancel(i)
+        
+        # 隐藏之前的作业显示
         for i in self.homework_list:
             i.place_forget()
+
+        # 重新加载数据
         with open("homework.json", "r", encoding="utf-8") as f:
             self.data = json.load(f)
-        
+
         # 按时间戳对 homework.json 每一科进行排序并写回文件
         try:
             for key, lst in self.data.items():
@@ -162,12 +125,15 @@ class HomeworkTool:
         except Exception:
             pass
 
+        # 清空当前显示列表
         self.homework_list = []
         self.homework_page_list = []
+
+        # 重新生成显示内容
         for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
                 content = self.subject_display_names[i] + ":" + k["content"]
-                content = charater_count(content)
+                content = homeworkfunc.charater_count(content)
                 self.homework_page_list.append(content)
                 self.homework_list.append(
                     Label(
@@ -175,45 +141,53 @@ class HomeworkTool:
                         text=content[0],
                     )
                 )
-                if analyze_time(k["time"]) == "时间已过":
+                if homeworkfunc.analyze_time(k["time"])[1] == -1:
                     self.homework_list[-1].config(fg=COLOR)
         inv = 35 if len(self.homework_list) < 10 else 30
         for idx, widget in enumerate(self.homework_list):
             widget.place(x=45, y=40 + idx * inv)
 
-        self.upload_track()
+        # 更新时间显示并计划下一次更新
+        self.upload_time_display()
         tk.after(1, self.roll_show)
 
-    def upload_track(self, aid=-1):
-        """每分钟更新一次时间"""
-        if aid != -1:
-            tk.after_cancel(aid)
-            self.reminder_schedule.remove(aid)
+    def upload_time_display(self):
+        """
+        每分钟更新一次时间显示。
+        使用实例属性 `_upload_aid` 跟踪上一次调度以便安全取消。
+        """
 
+        # 取消上一次的定时器（如果存在）
+        if getattr(self, "_upload_aid", None) is not None:
+            try:
+                tk.after_cancel(self._upload_aid)
+                self.reminder_schedule.remove(self._upload_aid)
+            except Exception:
+                pass
+
+        # 隐藏之前的时间显示
         for i in self.time_list:
             i.place_forget()
+        
+        # 清空时间显示列表
         self.time_list = []
+
+        # 重新生成时间显示
         for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
+                time_status = homeworkfunc.analyze_time(k["time"])
                 self.time_list.append(
                     Label(
                         tk,
-                        text=analyze_time(k["time"]),
+                        text=time_status[0],
                         width=13,
                         justify="right",
                         anchor="e",
                     )
                 )
-                time_text = self.time_list[-1].cget("text")
-                if time_text == "现在收":
+                if time_status[1] == 2:
                     self.time_list[-1].config(fg="#23272E", bg="#C8C8C8")
-                elif (
-                    "后天" not in time_text
-                    and "周" not in time_text
-                    and "/" not in time_text
-                    and "时间" not in time_text
-                    and "不" not in time_text
-                ):
+                elif time_status[1] == 1:
                     self.time_list[-1].config(bg="#23272E", fg="#C8C8C8")
                 else:
                     self.time_list[-1].config(bg="#23272E", fg=COLOR)
@@ -222,8 +196,9 @@ class HomeworkTool:
             widget.place(x=1075, y=40 + idx * inv)
         now = time.localtime()
         remaining_seconds = 60 - now.tm_sec
-        aid = tk.after(remaining_seconds * 1000, lambda: self.upload_track(aid))
-        self.reminder_schedule.append(aid)
+        # 只传递方法引用，由方法内部追踪 aid
+        self._upload_aid = tk.after(remaining_seconds * 1000, self.upload_time_display)
+        self.reminder_schedule.append(self._upload_aid)
 
     def roll_show(self):
         for i, j in enumerate(self.homework_list):
@@ -231,21 +206,29 @@ class HomeworkTool:
             self.homework_page_list[i].append(self.homework_page_list[i].pop(0))
         tk.after(1, self.roll_title)
 
-    def roll_title(self, arg=21, aid=-1):
-        if aid != -1:
-            tk.after_cancel(aid)
-            self.reminder_schedule.remove(aid)
+    def roll_title(self, arg=21):
+        """
+        更新窗口标题的滚动显示；使用 `_title_aid` 跟踪定时器 id 以便取消。
+        """
+        # 取消上一次的定时器（如果存在）
+        if getattr(self, "_title_aid", None) is not None:
+            try:
+                tk.after_cancel(self._title_aid)
+                self.reminder_schedule.remove(self._title_aid)
+            except Exception:
+                pass
 
         if arg == -1:
             tk.after(1, self.roll_show)
             return
-        self.ui_title.config(
-            text=time.strftime(
-                f"%H:%M:%S R{str(arg).zfill(2)} T{str(self.tick).zfill(3)}" if DEBUG else f"%H:%M:%S {VERSION}", time.localtime(time.time())
-            )
+        fmt = (
+            f"%H:%M:%S R{str(arg).zfill(2)} T{str(self.tick).zfill(3)}"
+            if DEBUG
+            else f"%H:%M:%S {VERSION}"
         )
-        aid = tk.after(200, self.roll_title, arg - 1, aid)
-        self.reminder_schedule.append(aid)
+        self.ui_title.config(text=time.strftime(fmt, time.localtime(time.time())))
+        self._title_aid = tk.after(200, self.roll_title, arg - 1)
+        self.reminder_schedule.append(self._title_aid)
 
     def load_ui(self):
         tk.title("作业管理器")
@@ -298,7 +281,7 @@ class HomeworkTool:
         self.ui_side_edit = Button(
             tk, text="E", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
         )
-    
+
     def clear_homework(self):
         # 清理所有“时间已过”的作业（时间戳非0且早于当前时间10分钟以前）
         removed = 0
@@ -349,11 +332,15 @@ class HomeworkTool:
 
         Label(new_window, text="科目", bg="#23272E").grid(row=1, column=1)
         subject_var = StringVar(new_window)
-        if subject_index is not None and 0 <= subject_index < len(self.subject_display_names):
+        if subject_index is not None and 0 <= subject_index < len(
+            self.subject_display_names
+        ):
             subject_var.set(self.subject_display_names[subject_index])
         else:
             subject_var.set(self.subject_display_names[0])
-        OptionMenu(new_window, subject_var, *self.subject_display_names).grid(row=1, column=2)
+        OptionMenu(new_window, subject_var, *self.subject_display_names).grid(
+            row=1, column=2
+        )
 
         Label(new_window, text="内容", bg="#23272E").grid(row=2, column=1)
         content_entry = Entry(new_window, width=60, relief=RIDGE)
@@ -498,34 +485,35 @@ class HomeworkTool:
             self.ui_side_edit.place_forget()
             self.ui_side_delete.place_forget()
             return
-        
+
         self.ui_side_delete.place(x=5, y=45 + self.arg * inv)
         self.ui_side_edit.place(x=25, y=45 + self.arg * inv)
         self.ui_side_delete.config(command=lambda: self.delete_homework(self.arg))
         self.ui_side_edit.config(command=lambda: self.edit_homework(self.arg))
-    
+
     def exit(self):
         sys.exit(0)
 
 
-if __name__ == "__main__":
-    # 进程检测：仅允许单个实例运行（使用文件锁）
-    def _acquire_lock(lock_path="homework.lock"):
-        try:
-            lock_file = open(lock_path, "w")
-            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
-            return lock_file
-        except OSError:
-            return None
-
-    _lock = _acquire_lock()
+def main():
+    """
+    程序入口：尝试获取进程锁，启动 GUI 主循环。
+    """
+    _lock = acquire_lock()
     if not _lock:
+        # 无法获取锁，提示用户程序已在运行
         tmp_root = Tk()
         tmp_root.withdraw()
         messagebox.showwarning("提示", "程序已在运行，无法启动多个实例。")
         tmp_root.destroy()
         sys.exit(0)
 
+    # 创建全局 tk（保持与原代码兼容）并启动应用
+    global tk
     tk = Tk()
     app = HomeworkTool()
     tk.mainloop()
+
+
+if __name__ == "__main__":
+    main()

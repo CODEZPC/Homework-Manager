@@ -1,7 +1,8 @@
 /build
-/desktop.ini
+desktop.ini
 /dist
-/main.spec
-/homework.lock
-/homework.json
-/main.exe
+main.spec
+homework.lock
+main.exe
+homework.json
+/__pycache__
