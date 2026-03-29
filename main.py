@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import messagebox
+
 try:
     import mouse
 except Exception:
@@ -14,14 +15,6 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 VERSION = "1.3.5"
-
-def getwidth(object):
-    """
-    返回给定控件的当前像素宽度（调用前请确保已有 `tk` 根）。
-    注意：函数依赖全局变量 `tk`。
-    """
-    tk.update_idletasks()
-    return object.winfo_width()
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -39,11 +32,13 @@ def acquire_lock(lock_path="homework.lock"):
 
 class HomeworkTool:
     def __init__(self):
+
         # 默认UI配置
         tk.option_add("*Background", "#23272E")
         tk.option_add("*Foreground", "#C8C8C8")
         tk.option_add("*Font", ("JetBrains Mono", 18))
         self.load_ui()
+
         # 列表初始化
         self.homework_list = []  # 作业UI
         self.time_list = []  # 时间UI
@@ -51,18 +46,33 @@ class HomeworkTool:
         self.subject_codes = homeworkfunc.SUBJECT_CODES
         self.subject_display_names = homeworkfunc.SUBJECT_DISPLAY_NAMES
         self.reminder_schedule = []  # 计划的tk.after
+
         # 各类定时器的 id（用于取消），初始化为 None
         self._upload_aid = None
         self._title_aid = None
+
+        # 校验资源完整性
         homeworkfunc.resource_check(self.subject_codes)
+
+        # 显示
         self.draw_homework()
+
+        # 鼠标移动事件绑定（用于显示/隐藏按钮）
         tk.bind("<Motion>", self.mouse_move)
+
+        # 自动隐藏按钮的计时器
         self.tick = 0
         tk.after(1, self.on_tick)
 
     def on_tick(self):
+        """
+        每秒调用一次，自动隐藏按钮并防止锁屏。
+        """
+
+        # 3秒
         if self.tick > 2:
             try:
+                # 隐藏UI按钮
                 self.ui_top_exit.place_forget()
                 self.ui_top_add.place_forget()
                 self.ui_top_refresh.place_forget()
@@ -71,6 +81,8 @@ class HomeworkTool:
                 self.ui_side_edit.place_forget()
             except:
                 pass
+
+        # 5分钟
         if self.tick > 300:
             # 自动防止锁屏/进入休眠的兼容性处理（在无法使用 mouse 时安全跳过）
             if mouse:
@@ -82,17 +94,25 @@ class HomeworkTool:
                     pass
             self.tick = 3
         self.tick += 1
+
+        # 继续调用自己
         tk.after(1000, self.on_tick)
 
     def draw_homework(self):
         """显示作业列表"""
+
+        # 取消之前计划的提醒（如果有）
         for i in self.reminder_schedule:
             tk.after_cancel(i)
+        
+        # 隐藏之前的作业显示
         for i in self.homework_list:
             i.place_forget()
+
+        # 重新加载数据
         with open("homework.json", "r", encoding="utf-8") as f:
             self.data = json.load(f)
-        
+
         # 按时间戳对 homework.json 每一科进行排序并写回文件
         try:
             for key, lst in self.data.items():
@@ -105,8 +125,11 @@ class HomeworkTool:
         except Exception:
             pass
 
+        # 清空当前显示列表
         self.homework_list = []
         self.homework_page_list = []
+
+        # 重新生成显示内容
         for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
                 content = self.subject_display_names[i] + ":" + k["content"]
@@ -124,6 +147,7 @@ class HomeworkTool:
         for idx, widget in enumerate(self.homework_list):
             widget.place(x=45, y=40 + idx * inv)
 
+        # 更新时间显示并计划下一次更新
         self.upload_time_display()
         tk.after(1, self.roll_show)
 
@@ -132,6 +156,7 @@ class HomeworkTool:
         每分钟更新一次时间显示。
         使用实例属性 `_upload_aid` 跟踪上一次调度以便安全取消。
         """
+
         # 取消上一次的定时器（如果存在）
         if getattr(self, "_upload_aid", None) is not None:
             try:
@@ -140,9 +165,14 @@ class HomeworkTool:
             except Exception:
                 pass
 
+        # 隐藏之前的时间显示
         for i in self.time_list:
             i.place_forget()
+        
+        # 清空时间显示列表
         self.time_list = []
+
+        # 重新生成时间显示
         for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
                 self.time_list.append(
@@ -197,7 +227,11 @@ class HomeworkTool:
         if arg == -1:
             tk.after(1, self.roll_show)
             return
-        fmt = f"%H:%M:%S R{str(arg).zfill(2)} T{str(self.tick).zfill(3)}" if DEBUG else f"%H:%M:%S {VERSION}"
+        fmt = (
+            f"%H:%M:%S R{str(arg).zfill(2)} T{str(self.tick).zfill(3)}"
+            if DEBUG
+            else f"%H:%M:%S {VERSION}"
+        )
         self.ui_title.config(text=time.strftime(fmt, time.localtime(time.time())))
         self._title_aid = tk.after(200, self.roll_title, arg - 1)
         self.reminder_schedule.append(self._title_aid)
@@ -253,7 +287,7 @@ class HomeworkTool:
         self.ui_side_edit = Button(
             tk, text="E", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
         )
-    
+
     def clear_homework(self):
         # 清理所有“时间已过”的作业（时间戳非0且早于当前时间10分钟以前）
         removed = 0
@@ -304,11 +338,15 @@ class HomeworkTool:
 
         Label(new_window, text="科目", bg="#23272E").grid(row=1, column=1)
         subject_var = StringVar(new_window)
-        if subject_index is not None and 0 <= subject_index < len(self.subject_display_names):
+        if subject_index is not None and 0 <= subject_index < len(
+            self.subject_display_names
+        ):
             subject_var.set(self.subject_display_names[subject_index])
         else:
             subject_var.set(self.subject_display_names[0])
-        OptionMenu(new_window, subject_var, *self.subject_display_names).grid(row=1, column=2)
+        OptionMenu(new_window, subject_var, *self.subject_display_names).grid(
+            row=1, column=2
+        )
 
         Label(new_window, text="内容", bg="#23272E").grid(row=2, column=1)
         content_entry = Entry(new_window, width=60, relief=RIDGE)
@@ -453,12 +491,12 @@ class HomeworkTool:
             self.ui_side_edit.place_forget()
             self.ui_side_delete.place_forget()
             return
-        
+
         self.ui_side_delete.place(x=5, y=45 + self.arg * inv)
         self.ui_side_edit.place(x=25, y=45 + self.arg * inv)
         self.ui_side_delete.config(command=lambda: self.delete_homework(self.arg))
         self.ui_side_edit.config(command=lambda: self.edit_homework(self.arg))
-    
+
     def exit(self):
         sys.exit(0)
 
