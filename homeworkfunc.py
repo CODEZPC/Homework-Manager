@@ -1,6 +1,8 @@
 import time
 import json
+import warnings
 from tkinter import *
+import tkinter.font as tkfont
 
 SUBJECT_CODES = [
     "C",
@@ -70,8 +72,11 @@ def analyze_time(timestamp):
 
 def charater_count(string, limit=70):
     """
-    计算字符串在指定长度限制下的分页情况。
+    计算字符串在指定长度限制下的分页情况。(已废弃，请使用 split_sentence 替代)
     """
+    warnings.warn(
+        "函数 charater_count 已废弃，请使用 split_sentence 替代", DeprecationWarning
+    )
     count = 0
     start = 0
     page = []
@@ -100,13 +105,42 @@ def charater_count(string, limit=70):
     return page
 
 
-def getwidth(object, tk):
+def split_sentence(string, limit, tki):
+    now = 0
+    start = 0
+    page = []
+    object = Label(tki, text=string[start : now + 1], font=("JetBrains Mono", 18))
+    while now < len(string):
+        object.config(text=string[start : now + 1])
+        if getwidth(object, tki) > limit:
+            while getwidth(object, tki) > limit:
+                now -= 1
+                object.config(text=string[start : now + 1])
+            page.append(string[start : now + 1])
+            start = now + 1
+        now += 10 if now + 10 < len(string) else 1
+    if len(string) > start:
+        page.append(string[start:])
+    return page
+
+
+def getwidth(object, tki):
     """
-    返回给定控件的当前像素宽度（调用前请确保已有 `tk` 根）。
-    注意：函数依赖全局变量 `tk`。
+    返回给定控件文本的像素宽度（调用前请确保已有 `tki` 根）。
+    优先通过控件的 `text` 与 `font` 来计算像素宽度，保证返回的是像素值而不是字符数。
+    如果控件不包含文本（或无法读取），则回退到 `winfo_width()`。
     """
-    tk.update_idletasks()
-    return object.winfo_width()
+    tki.update_idletasks()
+    try:
+        text = object.cget("text")
+    except Exception:
+        return object.winfo_width()
+    try:
+        font_name = object.cget("font")
+        font = tkfont.Font(root=tki, font=font_name)
+    except Exception:
+        font = tkfont.Font(root=tki)
+    return font.measure(text)
 
 
 def resource_check(subject_codes):
@@ -122,3 +156,7 @@ def resource_check(subject_codes):
             for code in subject_codes:
                 data[code] = []
             json.dump(data, f, ensure_ascii=False, indent=4)
+
+
+if __name__ == "__main__":
+    pass

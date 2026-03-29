@@ -107,6 +107,11 @@ class HomeworkTool:
         # 隐藏之前的作业显示
         for i in self.homework_list:
             i.place_forget()
+        for i in self.time_list:
+            i.place_forget()
+        a = Label(tk, text="正在加载...", fg=COLOR, font=("HYWenHei-85W", 24))
+        a.place(x=45, y=40)
+        tk.update()  # 强制更新界面，确保之前的内容被隐藏
 
         # 重新加载数据
         with open("homework.json", "r", encoding="utf-8") as f:
@@ -132,7 +137,7 @@ class HomeworkTool:
         for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
                 content = self.subject_display_names[i] + ":" + k["content"]
-                content = homeworkfunc.charater_count(content)
+                content = homeworkfunc.split_sentence(content, self.POSITION_TIME_DISPLAY_X - 45, tk)
                 self.homework_page_list.append(content)
                 self.homework_list.append(
                     Label(
@@ -145,6 +150,8 @@ class HomeworkTool:
         inv = 35 if len(self.homework_list) < 10 else 30
         for idx, widget in enumerate(self.homework_list):
             widget.place(x=45, y=40 + idx * inv)
+
+        a.place_forget()  # 隐藏加载提示
 
         # 更新时间显示并计划下一次更新
         self.upload_time_display()
@@ -325,13 +332,14 @@ class HomeworkTool:
         deadline_timestamp=None,
         replace_target=None,
     ):
-        if len(self.homework_list) >= 22:
+        if len(self.homework_list) * 30 + 40 >= tk.winfo_screenheight() - 40:
             messagebox.showerror("超过上限", "作业数量已达上限")
             return
         new_window = Toplevel(tk)
         new_window.title("新建作业")
         new_window.config(bg="#23272E")
         new_window.resizable(False, False)
+        # new_window.attributes("-topmost", True)
 
         Label(new_window, text=" ").grid(row=0, column=0)
         Label(new_window, text=" ").grid(row=999, column=999)
@@ -414,6 +422,9 @@ class HomeworkTool:
                 new_window.destroy()
             except ValueError:
                 messagebox.showerror("错误", "截止时间格式错误，应为 YYYY/MM/DD HH:MM:SS 或 0")
+                time_entry.config(fg="#FF2C2C")
+                new_window.focus()
+                new_window.after(2000, lambda: time_entry.config(fg="#C8C8C8"))
 
         Button(new_window, text="提交", command=submit, relief=FLAT).grid(
             row=4, column=2, sticky="e"
