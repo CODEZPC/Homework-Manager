@@ -1,6 +1,10 @@
 from tkinter import *
 from tkinter import messagebox
-import mouse
+try:
+    import mouse
+except Exception:
+    # 在无法导入或权限受限时降级为 None，避免程序崩溃
+    mouse = None
 import json
 import sys
 import time
@@ -12,8 +16,25 @@ DEBUG = False
 VERSION = "1.3.5"
 
 def getwidth(object):
+    """
+    返回给定控件的当前像素宽度（调用前请确保已有 `tk` 根）。
+    注意：函数依赖全局变量 `tk`。
+    """
     tk.update_idletasks()
     return object.winfo_width()
+
+
+def acquire_lock(lock_path="homework.lock"):
+    """
+    尝试获取一个简单的文件锁（Windows 下使用 msvcrt），
+    成功返回打开的文件对象（必须保持引用以维持锁），失败返回 None。
+    """
+    try:
+        lock_file = open(lock_path, "w")
+        msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+        return lock_file
+    except OSError:
+        return None
 
 
 class HomeworkTool:
@@ -30,6 +51,9 @@ class HomeworkTool:
         self.subject_codes = homeworkfunc.SUBJECT_CODES
         self.subject_display_names = homeworkfunc.SUBJECT_DISPLAY_NAMES
         self.reminder_schedule = []  # 计划的tk.after
+        # 各类定时器的 id（用于取消），初始化为 None
+        self._upload_aid = None
+        self._title_aid = None
         homeworkfunc.resource_check(self.subject_codes)
         self.draw_homework()
         tk.bind("<Motion>", self.mouse_move)
@@ -48,8 +72,14 @@ class HomeworkTool:
             except:
                 pass
         if self.tick > 300:
-            mouse.move(400, 1200)
-            mouse.click()
+            # 自动防止锁屏/进入休眠的兼容性处理（在无法使用 mouse 时安全跳过）
+            if mouse:
+                try:
+                    mouse.move(400, 1200)
+                    mouse.click()
+                except Exception:
+                    # 鼠标库可能在某些环境中不可用或权限受限，忽略异常
+                    pass
             self.tick = 3
         self.tick += 1
         tk.after(1000, self.on_tick)
@@ -97,11 +127,18 @@ class HomeworkTool:
         self.upload_time_display()
         tk.after(1, self.roll_show)
 
-    def upload_time_display(self, aid=-1):
-        """每分钟更新一次时间"""
-        if aid != -1:
-            tk.after_cancel(aid)
-            self.reminder_schedule.remove(aid)
+    def upload_time_display(self):
+        """
+        每分钟更新一次时间显示。
+        使用实例属性 `_upload_aid` 跟踪上一次调度以便安全取消。
+        """
+        # 取消上一次的定时器（如果存在）
+        if getattr(self, "_upload_aid", None) is not None:
+            try:
+                tk.after_cancel(self._upload_aid)
+                self.reminder_schedule.remove(self._upload_aid)
+            except Exception:
+                pass
 
         for i in self.time_list:
             i.place_forget()
@@ -135,8 +172,9 @@ class HomeworkTool:
             widget.place(x=1075, y=40 + idx * inv)
         now = time.localtime()
         remaining_seconds = 60 - now.tm_sec
-        aid = tk.after(remaining_seconds * 1000, lambda: self.upload_time_display(aid))
-        self.reminder_schedule.append(aid)
+        # 只传递方法引用，由方法内部追踪 aid
+        self._upload_aid = tk.after(remaining_seconds * 1000, self.upload_time_display)
+        self.reminder_schedule.append(self._upload_aid)
 
     def roll_show(self):
         for i, j in enumerate(self.homework_list):
@@ -144,21 +182,25 @@ class HomeworkTool:
             self.homework_page_list[i].append(self.homework_page_list[i].pop(0))
         tk.after(1, self.roll_title)
 
-    def roll_title(self, arg=21, aid=-1):
-        if aid != -1:
-            tk.after_cancel(aid)
-            self.reminder_schedule.remove(aid)
+    def roll_title(self, arg=21):
+        """
+        更新窗口标题的滚动显示；使用 `_title_aid` 跟踪定时器 id 以便取消。
+        """
+        # 取消上一次的定时器（如果存在）
+        if getattr(self, "_title_aid", None) is not None:
+            try:
+                tk.after_cancel(self._title_aid)
+                self.reminder_schedule.remove(self._title_aid)
+            except Exception:
+                pass
 
         if arg == -1:
             tk.after(1, self.roll_show)
             return
-        self.ui_title.config(
-            text=time.strftime(
-                f"%H:%M:%S R{str(arg).zfill(2)} T{str(self.tick).zfill(3)}" if DEBUG else f"%H:%M:%S {VERSION}", time.localtime(time.time())
-            )
-        )
-        aid = tk.after(200, self.roll_title, arg - 1, aid)
-        self.reminder_schedule.append(aid)
+        fmt = f"%H:%M:%S R{str(arg).zfill(2)} T{str(self.tick).zfill(3)}" if DEBUG else f"%H:%M:%S {VERSION}"
+        self.ui_title.config(text=time.strftime(fmt, time.localtime(time.time())))
+        self._title_aid = tk.after(200, self.roll_title, arg - 1)
+        self.reminder_schedule.append(self._title_aid)
 
     def load_ui(self):
         tk.title("作业管理器")
@@ -421,24 +463,25 @@ class HomeworkTool:
         sys.exit(0)
 
 
-if __name__ == "__main__":
-    # 进程检测：仅允许单个实例运行（使用文件锁）
-    def _acquire_lock(lock_path="homework.lock"):
-        try:
-            lock_file = open(lock_path, "w")
-            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
-            return lock_file
-        except OSError:
-            return None
-
-    _lock = _acquire_lock()
+def main():
+    """
+    程序入口：尝试获取进程锁，启动 GUI 主循环。
+    """
+    _lock = acquire_lock()
     if not _lock:
+        # 无法获取锁，提示用户程序已在运行
         tmp_root = Tk()
         tmp_root.withdraw()
         messagebox.showwarning("提示", "程序已在运行，无法启动多个实例。")
         tmp_root.destroy()
         sys.exit(0)
 
+    # 创建全局 tk（保持与原代码兼容）并启动应用
+    global tk
     tk = Tk()
     app = HomeworkTool()
     tk.mainloop()
+
+
+if __name__ == "__main__":
+    main()
