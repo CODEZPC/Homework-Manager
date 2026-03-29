@@ -14,7 +14,7 @@ import homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
-VERSION = "1.3.7 α1"
+VERSION = "1.3.7 α2"
 
 def acquire_lock(lock_path="homework.lock"):
     """
@@ -192,7 +192,7 @@ class HomeworkTool:
                     self.time_list[-1].config(bg="#23272E", fg=COLOR)
         inv = 35 if len(self.time_list) < 10 else 30
         for idx, widget in enumerate(self.time_list):
-            widget.place(x=1075, y=40 + idx * inv)
+            widget.place(x=self.POSITION_TIME_DISPLAY_X, y=40 + idx * inv)
         now = time.localtime()
         remaining_seconds = 60 - now.tm_sec
         # 只传递方法引用，由方法内部追踪 aid
@@ -235,6 +235,13 @@ class HomeworkTool:
         tk.attributes("-fullscreen", True)  # ! Uncomment when release
         tk.config(bg="#23272E")
         tk.resizable(False, False)
+
+        self.POSITION_TIME_DISPLAY_X = tk.winfo_screenwidth() - 205
+        self.POSITION_TOP_EXIT_X = tk.winfo_screenwidth() - 55
+        self.POSITION_TOP_REFRESH_X = tk.winfo_screenwidth() - 111
+        self.POSITION_TOP_ADD_X = tk.winfo_screenwidth() - 167
+        self.POSITION_TOP_CLEAR_X = tk.winfo_screenwidth() - 223
+        
 
         self.ui_title = Label(
             tk,
@@ -470,10 +477,10 @@ class HomeworkTool:
             self.arg = -1
         # self.title.config(text=f"鼠标位置：({x}, {y}),{self.arg}")
 
-        self.ui_top_exit.place(x=1225, y=0)
-        self.ui_top_refresh.place(x=1169, y=0)
-        self.ui_top_add.place(x=1113, y=0)
-        self.ui_top_clear.place(x=1057, y=0)
+        self.ui_top_exit.place(x=self.POSTION_TOP_EXIT_X, y=0)
+        self.ui_top_refresh.place(x=self.POSITION_TOP_REFRESH_X, y=0)
+        self.ui_top_add.place(x=self.POSITION_TOP_ADD_X, y=0)
+        self.ui_top_clear.place(x=self.POSITION_TOP_CLEAR_X, y=0)
 
         if self.arg <= -1:
             self.ui_side_edit.place_forget()
