@@ -14,8 +14,7 @@ import homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
-VERSION = "1.3.6"
-
+VERSION = "1.3.7 α1"
 
 def acquire_lock(lock_path="homework.lock"):
     """
@@ -407,12 +406,7 @@ class HomeworkTool:
                 self.draw_homework()
                 new_window.destroy()
             except ValueError:
-                Label(
-                    new_window,
-                    text="时间格式错误！请使用 YYYY/MM/DD HH:MM:SS",
-                    fg="red",
-                    bg="#23272E",
-                ).place(x=10, y=130)
+                messagebox.showerror("错误", "截止时间格式错误，应为 YYYY/MM/DD HH:MM:SS 或 0")
 
         Button(new_window, text="提交", command=submit, relief=FLAT).grid(
             row=4, column=2, sticky="e"
