@@ -14,7 +14,7 @@ import homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
-VERSION = "1.3.7 α2"
+VERSION = "1.3.8 indev"
 
 def acquire_lock(lock_path="homework.lock"):
     """
@@ -96,9 +96,25 @@ class HomeworkTool:
 
         # 继续调用自己
         tk.after(1000, self.on_tick)
+    
+    def cooldown(self, object, original, second=20):
+        """
+        对指定按钮进行短暂禁用，防止重复点击。
+
+        second: 禁用持续时间（1/10 秒）
+        """
+        if second <= 0:
+             object.config(state=NORMAL, text=original, font=("汉仪文黑-85W", 14))
+             return
+        object.config(state=DISABLED, text=f"{second/10}s", font=("JetBrains Mono", 14))
+        tk.after(100, lambda: self.cooldown(object, original, second - 1))
 
     def draw_homework(self):
         """显示作业列表"""
+
+        self.ui_top_add.config(state=DISABLED)
+        self.ui_top_refresh.config(state=DISABLED)
+        self.ui_top_clear.config(state=DISABLED)
 
         # 取消之前计划的提醒（如果有）
         for i in self.reminder_schedule:
@@ -152,6 +168,10 @@ class HomeworkTool:
             widget.place(x=45, y=40 + idx * inv)
 
         a.place_forget()  # 隐藏加载提示
+
+        self.cooldown(self.ui_top_add, "添加")
+        self.cooldown(self.ui_top_refresh, "刷新")
+        self.cooldown(self.ui_top_clear, "清空")
 
         # 更新时间显示并计划下一次更新
         self.upload_time_display()
