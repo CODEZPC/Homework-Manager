@@ -15,7 +15,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 STRESS_TEST = False
-VERSION = "1.3.8 β01"
+VERSION = "1.3.8 β02"
 
 def acquire_lock(lock_path="homework.lock"):
     """
@@ -342,6 +342,7 @@ class HomeworkTool:
                 messagebox.showinfo("清理完成", f"已清理 {removed} 个已过期作业。")
             else:
                 messagebox.showinfo("清理完成", "没有需要清理的作业。")
+                return
             self.draw_homework()
         except Exception as e:
             messagebox.showerror("错误", f"清理作业时发生错误：{e}")
