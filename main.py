@@ -14,7 +14,7 @@ import homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
-STRESS_TEST = False
+DATA = "homework.json"
 VERSION = "1.3.8 β02"
 
 def acquire_lock(lock_path="homework.lock"):
@@ -131,7 +131,7 @@ class HomeworkTool:
         tk.update()  # 强制更新界面，确保之前的内容被隐藏
 
         # 重新加载数据
-        with open("homework.json" if not STRESS_TEST else "homework_stress.json", "r", encoding="utf-8") as f:
+        with open(DATA, "r", encoding="utf-8") as f:
             self.data = json.load(f)
 
         # 按时间戳对 homework.json 每一科进行排序并写回文件
@@ -141,7 +141,7 @@ class HomeworkTool:
                     lst.sort(key=lambda it: int(it.get("time", 0)))
                 except Exception:
                     lst.sort(key=lambda it: it.get("time", 0))
-            with open("homework.json", "w", encoding="utf-8") as f:
+            with open(DATA, "w", encoding="utf-8") as f:
                 json.dump(self.data, f, ensure_ascii=False, indent=4)
         except Exception:
             pass
@@ -164,11 +164,13 @@ class HomeworkTool:
                 )
                 if homeworkfunc.analyze_time(k["time"])[1] == -1:
                     self.homework_list[-1].config(fg=COLOR)
+            a.config(text=f"正在加载[{i}:{self.subject_display_names[i]}]...")
         inv = 35 if len(self.homework_list) < 10 else 30
         for idx, widget in enumerate(self.homework_list):
             widget.place(x=45, y=40 + idx * inv)
 
         a.place_forget()  # 隐藏加载提示
+        del a  # 删除加载提示对象
 
         self.cooldown(self.ui_top_add, "添加")
         self.cooldown(self.ui_top_refresh, "刷新")
@@ -337,7 +339,7 @@ class HomeworkTool:
                         new_list.append(item)
                 self.data[key] = new_list
             if removed > 0:
-                with open("homework.json", "w", encoding="utf-8") as f:
+                with open(DATA, "w", encoding="utf-8") as f:
                     json.dump(self.data, f, ensure_ascii=False, indent=4)
                 messagebox.showinfo("清理完成", f"已清理 {removed} 个已过期作业。")
             else:
@@ -438,7 +440,7 @@ class HomeworkTool:
                         self.data[new_subject_key].append(new_item)
                 else:
                     self.data[new_subject_key].append(new_item)
-                with open("homework.json", "w", encoding="utf-8") as f:
+                with open(DATA, "w", encoding="utf-8") as f:
                     json.dump(self.data, f, ensure_ascii=False, indent=4)
                 self.draw_homework()
                 new_window.destroy()
@@ -472,7 +474,7 @@ class HomeworkTool:
             for j in self.data[i]:
                 if count == index:
                     self.data[i].remove(j)
-                    with open("homework.json", "w", encoding="utf-8") as f:
+                    with open(DATA, "w", encoding="utf-8") as f:
                         json.dump(self.data, f, ensure_ascii=False, indent=4)
                     self.draw_homework()
                     return
