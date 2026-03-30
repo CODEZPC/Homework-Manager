@@ -14,7 +14,8 @@ import homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
-VERSION = "1.3.8 indev"
+STRESS_TEST = False
+VERSION = "1.3.8 β01"
 
 def acquire_lock(lock_path="homework.lock"):
     """
@@ -130,7 +131,7 @@ class HomeworkTool:
         tk.update()  # 强制更新界面，确保之前的内容被隐藏
 
         # 重新加载数据
-        with open("homework.json", "r", encoding="utf-8") as f:
+        with open("homework.json" if not STRESS_TEST else "homework_stress.json", "r", encoding="utf-8") as f:
             self.data = json.load(f)
 
         # 按时间戳对 homework.json 每一科进行排序并写回文件
