@@ -7,6 +7,7 @@ except Exception:
     # 在无法导入或权限受限时降级为 None，避免程序崩溃
     mouse = None
 import json
+import keyboard
 import sys
 import time
 import msvcrt
@@ -15,7 +16,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.8 β02"
+VERSION = "1.3.8 β04"
 
 def acquire_lock(lock_path="homework.lock"):
     """
@@ -152,6 +153,7 @@ class HomeworkTool:
 
         # 重新生成显示内容
         for i, j in enumerate(self.subject_codes):
+            a.config(text=f"正在加载 - {self.subject_display_names[i]}...")
             for k in self.data[j]:
                 content = self.subject_display_names[i] + ":" + k["content"]
                 content = homeworkfunc.split_sentence(content, self.POSITION_TIME_DISPLAY_X - 45, tk)
@@ -164,7 +166,13 @@ class HomeworkTool:
                 )
                 if homeworkfunc.analyze_time(k["time"])[1] == -1:
                     self.homework_list[-1].config(fg=COLOR)
-            a.config(text=f"正在加载[{i}:{self.subject_display_names[i]}]...")
+
+            if keyboard.is_pressed("ctrl+c"):
+                break # 按住 Ctrl+C 可以在加载时跳过剩余科目
+            if keyboard.is_pressed("tab"):
+                time.sleep(0.6) # 按住 TAB 可以拖慢加载速度
+
+
         inv = 35 if len(self.homework_list) < 10 else 30
         for idx, widget in enumerate(self.homework_list):
             widget.place(x=45, y=40 + idx * inv)
