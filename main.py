@@ -16,7 +16,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.8 β04"
+VERSION = "1.3.8 rc1"
 
 def acquire_lock(lock_path="homework.lock"):
     """
@@ -167,8 +167,6 @@ class HomeworkTool:
                 if homeworkfunc.analyze_time(k["time"])[1] == -1:
                     self.homework_list[-1].config(fg=COLOR)
 
-            if keyboard.is_pressed("ctrl+c"):
-                break # 按住 Ctrl+C 可以在加载时跳过剩余科目
             if keyboard.is_pressed("tab"):
                 time.sleep(0.6) # 按住 TAB 可以拖慢加载速度
 
