@@ -16,7 +16,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.8 rc1"
+VERSION = "1.3.8 rc2"
 
 def acquire_lock(lock_path="homework.lock"):
     """
@@ -99,7 +99,7 @@ class HomeworkTool:
         # 继续调用自己
         tk.after(1000, self.on_tick)
     
-    def cooldown(self, object, original, second=20):
+    def cooldown(self, object, original, second=12):
         """
         对指定按钮进行短暂禁用，防止重复点击。
 
@@ -108,7 +108,7 @@ class HomeworkTool:
         if second <= 0:
              object.config(state=NORMAL, text=original, font=("汉仪文黑-85W", 14))
              return
-        object.config(state=DISABLED, text=f"{second/10}s", font=("JetBrains Mono", 14))
+        object.config(state=DISABLED, text=f"{second / 10 if second <= 99 else second // 10}s", font=("JetBrains Mono", 14))
         tk.after(100, lambda: self.cooldown(object, original, second - 1))
 
     def draw_homework(self):
@@ -350,6 +350,7 @@ class HomeworkTool:
                 messagebox.showinfo("清理完成", f"已清理 {removed} 个已过期作业。")
             else:
                 messagebox.showinfo("清理完成", "没有需要清理的作业。")
+                self.cooldown(self.ui_top_clear, "清理", second=1200)
                 return
             self.draw_homework()
         except Exception as e:
