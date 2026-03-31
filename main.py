@@ -16,7 +16,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.8 rc2"
+VERSION = "1.3.8 rc3"
 
 def acquire_lock(lock_path="homework.lock"):
     """
@@ -208,6 +208,7 @@ class HomeworkTool:
         self.time_list = []
 
         # 重新生成时间显示
+        idx = 0
         for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
                 time_status = homeworkfunc.analyze_time(k["time"])
@@ -226,6 +227,7 @@ class HomeworkTool:
                     self.time_list[-1].config(bg="#23272E", fg="#C8C8C8")
                 else:
                     self.time_list[-1].config(bg="#23272E", fg=COLOR)
+                    self.homework_list[idx].config(fg=COLOR)
         inv = 35 if len(self.time_list) < 10 else 30
         for idx, widget in enumerate(self.time_list):
             widget.place(x=self.POSITION_TIME_DISPLAY_X, y=40 + idx * inv)
