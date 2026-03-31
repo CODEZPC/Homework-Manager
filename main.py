@@ -225,7 +225,9 @@ class HomeworkTool:
                     self.time_list[-1].config(fg="#23272E", bg="#C8C8C8")
                 elif time_status[1] == 1:
                     self.time_list[-1].config(bg="#23272E", fg="#C8C8C8")
-                else:
+                elif time_status[1] == 0:
+                    self.time_list[-1].config(bg="#23272E", fg=COLOR)
+                elif time_status[1] == -1:
                     self.time_list[-1].config(bg="#23272E", fg=COLOR)
                     self.homework_list[idx].config(fg=COLOR)
                 idx += 1
