@@ -228,6 +228,7 @@ class HomeworkTool:
                 else:
                     self.time_list[-1].config(bg="#23272E", fg=COLOR)
                     self.homework_list[idx].config(fg=COLOR)
+                idx += 1
         inv = 35 if len(self.time_list) < 10 else 30
         for idx, widget in enumerate(self.time_list):
             widget.place(x=self.POSITION_TIME_DISPLAY_X, y=40 + idx * inv)
