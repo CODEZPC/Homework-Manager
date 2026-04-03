@@ -16,7 +16,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.8 rc4"
+VERSION = "1.3.9 - CLASSISLAND - INDEV 1"
 
 def acquire_lock(lock_path="homework.lock"):
     """
@@ -288,7 +288,7 @@ class HomeworkTool:
             tk,
             fg=COLOR,
         )
-        self.ui_title.place(x=10, y=5)
+        # self.ui_title.place(x=10, y=5)
         self.ui_top_exit = Button(
             tk,
             text="退出",
