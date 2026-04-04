@@ -16,7 +16,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.9 - CLASSISLAND - INDEV 3"
+VERSION = "1.3.9 - CLASSISLAND - INDEV 4"
 
 
 def acquire_lock(lock_path="homework.lock"):

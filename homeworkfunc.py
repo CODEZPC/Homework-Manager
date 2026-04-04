@@ -1,7 +1,6 @@
-import os
 import time
 import json
-import psutil
+import subprocess
 import warnings
 from tkinter import *
 import tkinter.font as tkfont
@@ -173,10 +172,7 @@ def uri_classisland(uri, mode="run"):
     :param uri: 要解析的 URI 字符串
     :param mode: 解析模式，默认为 "run"，表示直接运行解析结果 -> ["run", "revert"]
     """
-    for process in psutil.process_iter(['name']):
-        if process.info['name'] == "ClassIsland.Desktop.exe":
-            os.system(f"start classisland://app/api/automation/{mode}/{uri}")
-            print(f"已调用 ClassIsland URI 解析接口，模式：{mode}，URI：{uri}")
+    subprocess.Popen(f"start classisland://app/api/automation/{mode}/{uri}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
 if __name__ == "__main__":
