@@ -16,7 +16,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.9 - CLASSISLAND - INDEV 2"
+VERSION = "1.3.9 - CLASSISLAND - INDEV 3"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -216,6 +216,8 @@ class HomeworkTool:
 
         # 重新生成时间显示
         idx = 0
+        upload = 0
+        upload_soon = 0
         for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
                 time_status = homeworkfunc.analyze_time(k["time"])
@@ -228,10 +230,13 @@ class HomeworkTool:
                         anchor="e",
                     )
                 )
-                if time_status[1] == 3:
+                if time_status[1] >= 3:
                     self.time_list[-1].config(bg="#C8C8C8", fg="#23272E")
+                    if time_status[1] == 4:
+                        upload = 1
                 elif time_status[1] == 2:
                     self.time_list[-1].config(bg="#666666", fg="#FFFFFF")
+                    upload_soon = 1
                 elif time_status[1] == 1:
                     self.time_list[-1].config(bg="#23272E", fg="#C8C8C8")
                 elif time_status[1] == 0:
@@ -243,6 +248,10 @@ class HomeworkTool:
         inv = 35 if len(self.time_list) < 10 else 30
         for idx, widget in enumerate(self.time_list):
             widget.place(x=self.POSITION_TIME_DISPLAY_X, y=40 + idx * inv)
+        
+        if upload:
+            homeworkfunc.uri_classisland("Homeworkmode-upload")
+
         now = time.localtime()
         remaining_seconds = 60 - now.tm_sec
         # 只传递方法引用，由方法内部追踪 aid
@@ -411,10 +420,10 @@ class HomeworkTool:
                 time_value = "0"
             else:
                 time_value = time.strftime(
-                    "%Y/%m/%d %H:%M:%S", time.localtime(deadline_timestamp)
+                    "%Y/%m/%d %H:%M", time.localtime(deadline_timestamp)
                 )
         else:
-            time_value = time.strftime("%Y/%m/%d 22:10:00", time.localtime(time.time()))
+            time_value = time.strftime("%Y/%m/%d 22:10", time.localtime(time.time()))
 
         time_entry = Entry(
             new_window,
@@ -435,7 +444,7 @@ class HomeworkTool:
                     new_deadline_ts = 0
                 else:
                     new_deadline_ts = int(
-                        time.mktime(time.strptime(deadline_str, "%Y/%m/%d %H:%M:%S"))
+                        time.mktime(time.strptime(deadline_str, "%Y/%m/%d %H:%M"))
                     )
                 new_item = {"content": content, "time": new_deadline_ts}
                 if replace_target:
@@ -465,7 +474,7 @@ class HomeworkTool:
                 new_window.destroy()
             except ValueError:
                 messagebox.showerror(
-                    "作业管理器·错误", "截止时间格式错误，应为 YYYY/MM/DD HH:MM:SS 或 0"
+                    "作业管理器·错误", "截止时间格式错误，应为 YYYY/MM/DD HH:MM 或 0"
                 )
                 time_entry.config(fg="#FF2C2C")
                 new_window.focus()

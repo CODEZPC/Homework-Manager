@@ -58,8 +58,10 @@ def analyze_time(timestamp):
         return ("暂时不收", 0)
     elif timestamp < time.time() - TIME_OUT:
         return ("时间已过", -1)
-    elif timestamp < time.time():
+    elif timestamp < time.time() - 60:
         return ("现在收", 3)
+    elif timestamp < time.time():
+        return ("现在收", 4)
     elif timestamp < time.time() + TIME_OUT:
         return ("即将收", 2)
     elif timestamp < time_day_start + 86400:
