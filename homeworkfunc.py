@@ -174,7 +174,7 @@ def uri_classisland(uri, mode="run"):
     for process in psutil.process_iter(['name']):
         if process.info['name'] == "ClassIsland.Desktop.exe":
             os.system(f"start classisland://app/api/automation/{mode}/{uri}")
-            # print(f"已调用 ClassIsland URI 解析接口，模式：{mode}，URI：{uri}")
+            print(f"已调用 ClassIsland URI 解析接口，模式：{mode}，URI：{uri}")
 
 
 if __name__ == "__main__":
