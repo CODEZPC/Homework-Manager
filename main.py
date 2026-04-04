@@ -8,6 +8,7 @@ except Exception:
     mouse = None
 import json
 import keyboard
+import psutil
 import sys
 import time
 import msvcrt
@@ -16,7 +17,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.9 - CLASSISLAND - INDEV 4"
+VERSION = "1.3.9 - CLASSISLAND - β01"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -56,8 +57,7 @@ class HomeworkTool:
         # 校验资源完整性
         homeworkfunc.resource_check(self.subject_codes)
 
-        # 显示并激活ClassIsland
-        homeworkfunc.uri_classisland("homeworkmode-on")
+        # 显示
         self.draw_homework()
 
         # 鼠标移动事件绑定（用于显示/隐藏按钮）
@@ -192,6 +192,7 @@ class HomeworkTool:
         # 更新时间显示并计划下一次更新
         self.upload_time_display()
         tk.after(1, self.roll_show)
+        tk.after(1, self.roll_title)
 
     def upload_time_display(self):
         """
@@ -248,7 +249,7 @@ class HomeworkTool:
         inv = 35 if len(self.time_list) < 10 else 30
         for idx, widget in enumerate(self.time_list):
             widget.place(x=self.POSITION_TIME_DISPLAY_X, y=40 + idx * inv)
-        
+
         if upload:
             homeworkfunc.uri_classisland("Homeworkmode-upload")
 
@@ -258,13 +259,23 @@ class HomeworkTool:
         self._upload_aid = tk.after(remaining_seconds * 1000, self.upload_time_display)
         self.reminder_schedule.append(self._upload_aid)
 
-    def roll_show(self):
+    def roll_show(self, time=8):
+        # 取消上一次的定时器（如果存在）
+        if getattr(self, "_page_aid", None) is not None:
+            try:
+                tk.after_cancel(self._page_aid)
+                self.reminder_schedule.remove(self._page_aid)
+            except Exception:
+                pass
+        
         for i, j in enumerate(self.homework_list):
             j.config(text=self.homework_page_list[i][0])
             self.homework_page_list[i].append(self.homework_page_list[i].pop(0))
-        tk.after(1, self.roll_title)
+        
+        self._page_aid = tk.after(time * 1000, self.roll_show)
+        self.reminder_schedule.append(self._page_aid)
 
-    def roll_title(self, arg=21):
+    def roll_title(self):
         """
         更新窗口标题的滚动显示；使用 `_title_aid` 跟踪定时器 id 以便取消。
         """
@@ -276,16 +287,9 @@ class HomeworkTool:
             except Exception:
                 pass
 
-        if arg == -1:
-            tk.after(1, self.roll_show)
-            return
-        fmt = (
-            f"%H:%M:%S R{str(arg).zfill(2)} T{str(self.tick).zfill(3)}"
-            if DEBUG
-            else f"%H:%M:%S {VERSION}"
-        )
+        fmt = f"%H:%M:%S {VERSION}"
         self.ui_title.config(text=time.strftime(fmt, time.localtime(time.time())))
-        self._title_aid = tk.after(200, self.roll_title, arg - 1)
+        self._title_aid = tk.after(900, self.roll_title)
         self.reminder_schedule.append(self._title_aid)
 
     def load_ui(self):
@@ -305,7 +309,12 @@ class HomeworkTool:
             tk,
             fg=COLOR,
         )
-        # self.ui_title.place(x=10, y=5)
+        for process in psutil.process_iter(['name']):
+            if process.info['name'].lower() == "classisland.desktop.exe":
+                homeworkfunc.uri_classisland("homeworkmode-on")
+                break
+        else:
+            self.ui_title.place(x=10, y=5)
         self.ui_top_exit = Button(
             tk,
             text="退出",
@@ -369,7 +378,9 @@ class HomeworkTool:
             if removed > 0:
                 with open(DATA, "w", encoding="utf-8") as f:
                     json.dump(self.data, f, ensure_ascii=False, indent=4)
-                messagebox.showinfo("作业管理器·清理完成", f"已清理 {removed} 个已过期作业。")
+                messagebox.showinfo(
+                    "作业管理器·清理完成", f"已清理 {removed} 个已过期作业。"
+                )
             else:
                 messagebox.showinfo("作业管理器·清理完成", "没有需要清理的作业。")
                 return
