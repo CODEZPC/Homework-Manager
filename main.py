@@ -12,11 +12,60 @@ import sys
 import time
 import msvcrt
 import homeworkfunc
+import atexit
+import signal
 
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.9 - CLASSISLAND - INDEV 1"
+VERSION = "1.3.9 - CLASSISLAND - INDEV 3"
+
+"""==========退出时=========="""
+
+# 确保程序退出时能够恢复 ClassIsland（尽可能覆盖多种退出途径）
+def _revert_classisland_once():
+    try:
+        homeworkfunc.uri_classisland("homeworkmode", mode="revert")
+    except Exception:
+        pass
+
+
+# atexit: 在解释器正常退出时调用
+try:
+    atexit.register(_revert_classisland_once)
+except Exception:
+    pass
+
+
+# 信号处理：响应 Ctrl+C / 终止信号
+def _signal_handler(signum, frame):
+    _revert_classisland_once()
+    try:
+        sys.exit(0)
+    except Exception:
+        pass
+
+for _sig in ("SIGINT", "SIGTERM", "SIGBREAK"):
+    if hasattr(signal, _sig):
+        try:
+            signal.signal(getattr(signal, _sig), _signal_handler)
+        except Exception:
+            pass
+
+
+# 未捕获异常钩子：在出现未捕获异常时先尝试恢复再交给默认处理
+_old_excepthook = sys.excepthook
+
+def _excepthook(exc_type, exc, tb):
+    _revert_classisland_once()
+    try:
+        _old_excepthook(exc_type, exc, tb)
+    except Exception:
+        pass
+
+sys.excepthook = _excepthook
+
+"""==========结束=========="""
 
 def acquire_lock(lock_path="homework.lock"):
     """
@@ -55,7 +104,8 @@ class HomeworkTool:
         # 校验资源完整性
         homeworkfunc.resource_check(self.subject_codes)
 
-        # 显示
+        # 显示并激活ClassIsland
+        homeworkfunc.uri_classisland("homeworkmode")
         self.draw_homework()
 
         # 鼠标移动事件绑定（用于显示/隐藏按钮）
@@ -98,17 +148,21 @@ class HomeworkTool:
 
         # 继续调用自己
         tk.after(1000, self.on_tick)
-    
-    def cooldown(self, object, original, second=12):
+
+    def cooldown(self, object, original, second=5):
         """
         对指定按钮进行短暂禁用，防止重复点击。
 
         second: 禁用持续时间（1/10 秒）
         """
         if second <= 0:
-             object.config(state=NORMAL, text=original, font=("汉仪文黑-85W", 14))
-             return
-        object.config(state=DISABLED, text=f"{second / 10 if second <= 99 else second // 10}s", font=("JetBrains Mono", 14))
+            object.config(state=NORMAL, text=original, font=("汉仪文黑-85W", 14))
+            return
+        object.config(
+            state=DISABLED,
+            text=f"{second / 10 if second <= 99 else second // 10}s",
+            font=("JetBrains Mono", 14),
+        )
         tk.after(100, lambda: self.cooldown(object, original, second - 1))
 
     def draw_homework(self):
@@ -121,7 +175,7 @@ class HomeworkTool:
         # 取消之前计划的提醒（如果有）
         for i in self.reminder_schedule:
             tk.after_cancel(i)
-        
+
         # 隐藏之前的作业显示
         for i in self.homework_list:
             i.place_forget()
@@ -156,7 +210,9 @@ class HomeworkTool:
             a.config(text=f"正在加载 - {self.subject_display_names[i]}...")
             for k in self.data[j]:
                 content = self.subject_display_names[i] + ":" + k["content"]
-                content = homeworkfunc.split_sentence(content, self.POSITION_TIME_DISPLAY_X - 45, tk)
+                content = homeworkfunc.split_sentence(
+                    content, self.POSITION_TIME_DISPLAY_X - 45, tk
+                )
                 self.homework_page_list.append(content)
                 self.homework_list.append(
                     Label(
@@ -168,8 +224,7 @@ class HomeworkTool:
                     self.homework_list[-1].config(fg=COLOR)
 
             if keyboard.is_pressed("tab"):
-                time.sleep(0.6) # 按住 TAB 可以拖慢加载速度
-
+                time.sleep(0.6)  # 按住 TAB 可以拖慢加载速度
 
         inv = 35 if len(self.homework_list) < 10 else 30
         for idx, widget in enumerate(self.homework_list):
@@ -203,7 +258,7 @@ class HomeworkTool:
         # 隐藏之前的时间显示
         for i in self.time_list:
             i.place_forget()
-        
+
         # 清空时间显示列表
         self.time_list = []
 
@@ -221,8 +276,10 @@ class HomeworkTool:
                         anchor="e",
                     )
                 )
-                if time_status[1] == 2:
-                    self.time_list[-1].config(fg="#23272E", bg="#C8C8C8")
+                if time_status[1] == 3:
+                    self.time_list[-1].config(bg="#C8C8C8", fg="#23272E")
+                elif time_status[1] == 2:
+                    self.time_list[-1].config(bg="#666666", fg="#FFFFFF")
                 elif time_status[1] == 1:
                     self.time_list[-1].config(bg="#23272E", fg="#C8C8C8")
                 elif time_status[1] == 0:
@@ -282,7 +339,6 @@ class HomeworkTool:
         self.POSITION_TOP_REFRESH_X = tk.winfo_screenwidth() - 111
         self.POSITION_TOP_ADD_X = tk.winfo_screenwidth() - 167
         self.POSITION_TOP_CLEAR_X = tk.winfo_screenwidth() - 223
-        
 
         self.ui_title = Label(
             tk,
@@ -329,6 +385,12 @@ class HomeworkTool:
             tk, text="E", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
         )
 
+        # 当窗口被关闭（点击 X）时，确保调用退出逻辑（包括恢复 ClassIsland）
+        try:
+            tk.protocol("WM_DELETE_WINDOW", self.exit)
+        except Exception:
+            pass
+
     def clear_homework(self):
         # 清理所有“时间已过”的作业（时间戳非0且早于当前时间10分钟以前）
         removed = 0
@@ -344,7 +406,7 @@ class HomeworkTool:
                         except Exception:
                             t = 0
                     # 时间为0表示不收，跳过；过期规则：比当前时间早超过10分钟视为已过
-                    if t != 0 and t < time.time() - 600:
+                    if t != 0 and t < time.time() - homeworkfunc.TIME_OUT:
                         removed += 1
                     else:
                         new_list.append(item)
@@ -456,7 +518,9 @@ class HomeworkTool:
                 self.draw_homework()
                 new_window.destroy()
             except ValueError:
-                messagebox.showerror("错误", "截止时间格式错误，应为 YYYY/MM/DD HH:MM:SS 或 0")
+                messagebox.showerror(
+                    "错误", "截止时间格式错误，应为 YYYY/MM/DD HH:MM:SS 或 0"
+                )
                 time_entry.config(fg="#FF2C2C")
                 new_window.focus()
                 new_window.after(2000, lambda: time_entry.config(fg="#C8C8C8"))
@@ -539,6 +603,7 @@ class HomeworkTool:
         self.ui_side_edit.config(command=lambda: self.edit_homework(self.arg))
 
     def exit(self):
+        homeworkfunc.uri_classisland("homeworkmode", mode="revert")
         sys.exit(0)
 
 

@@ -1,5 +1,7 @@
+import os
 import time
 import json
+import psutil
 import warnings
 from tkinter import *
 import tkinter.font as tkfont
@@ -34,6 +36,8 @@ SUBJECT_DISPLAY_NAMES = [
     "其他",
 ]
 
+TIME_OUT = 300
+
 
 def analyze_time(timestamp):
     """
@@ -52,10 +56,12 @@ def analyze_time(timestamp):
     w = time.strftime("%w", time.localtime(timestamp))
     if timestamp == 0:
         return ("暂时不收", 0)
-    elif timestamp < time.time() - 600:
+    elif timestamp < time.time() - TIME_OUT:
         return ("时间已过", -1)
     elif timestamp < time.time():
-        return ("现在收", 2)
+        return ("现在收", 3)
+    elif timestamp < time.time() + TIME_OUT:
+        return ("即将收", 2)
     elif timestamp < time_day_start + 86400:
         return (f"{t}收", 1)
     elif timestamp < time_day_start + 86400 * 2:
@@ -158,5 +164,18 @@ def resource_check(subject_codes):
             json.dump(data, f, ensure_ascii=False, indent=4)
 
 
+def uri_classisland(uri, mode="run"):
+    """
+    调用 ClassIsland 的 URI 解析接口
+
+    :param uri: 要解析的 URI 字符串
+    :param mode: 解析模式，默认为 "run"，表示直接运行解析结果 -> ["run", "revert"]
+    """
+    for process in psutil.process_iter(['name']):
+        if process.info['name'] == "ClassIsland.Desktop.exe":
+            os.system(f"start classisland://app/api/automation/{mode}/{uri}")
+            # print(f"已调用 ClassIsland URI 解析接口，模式：{mode}，URI：{uri}")
+
+
 if __name__ == "__main__":
-    pass
+    uri_classisland("test")
