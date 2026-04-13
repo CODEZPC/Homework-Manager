@@ -218,7 +218,6 @@ class HomeworkTool:
         # 重新生成时间显示
         idx = 0
         upload = 0
-        upload_soon = 0
         for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
                 time_status = homeworkfunc.analyze_time(k["time"])
@@ -237,7 +236,6 @@ class HomeworkTool:
                         upload = 1
                 elif time_status[1] == 2:
                     self.time_list[-1].config(bg="#666666", fg="#FFFFFF")
-                    upload_soon = 1
                 elif time_status[1] == 1:
                     self.time_list[-1].config(bg="#23272E", fg="#C8C8C8")
                 elif time_status[1] == 0:
