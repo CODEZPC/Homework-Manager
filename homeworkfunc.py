@@ -42,6 +42,10 @@ def analyze_time(timestamp):
     """
     计算目标时间与当前时间的关系，返回一个字符串表示目标时间的状态。
     """
+    if timestamp == "?":
+        return ("未知", 0)
+    if timestamp == "?!":
+        return ("不定期", 1)
     we = ["日", "一", "二", "三", "四", "五", "六"]
     time_day_start = time.mktime(
         time.strptime(

@@ -16,7 +16,7 @@ import homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
-DATA = "homework_stress.json"
+DATA = "homework.json"
 VERSION = "1.3.10 indev 1"
 
 
@@ -142,16 +142,8 @@ class HomeworkTool:
             self.data = json.load(f)
 
         # 按时间戳对 homework.json 每一科进行排序并写回文件
-        try:
-            for key, lst in self.data.items():
-                try:
-                    lst.sort(key=lambda it: int(it.get("time", 0)))
-                except Exception:
-                    lst.sort(key=lambda it: it.get("time", 0))
-            with open(DATA, "w", encoding="utf-8") as f:
-                json.dump(self.data, f, ensure_ascii=False, indent=4)
-        except Exception:
-            pass
+        # ! 由于“More Timeshow”功能需要，此功能需要重写
+        # TODO : 重构排序
 
         # 清空当前显示列表
         self.homework_list = []
@@ -449,7 +441,9 @@ class HomeworkTool:
             content = content_entry.get()
             deadline_str = time_entry.get()
             try:
-                if deadline_str == "0":
+                if deadline_str == "?" or deadline_str == "?!":
+                    new_deadline_ts = deadline_str
+                elif deadline_str == "0":
                     new_deadline_ts = 0
                 else:
                     new_deadline_ts = int(
