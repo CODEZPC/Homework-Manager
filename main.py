@@ -17,7 +17,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.11 indev 1"
+VERSION = "1.3.11 indev 2"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -141,9 +141,53 @@ class HomeworkTool:
         with open(DATA, "r", encoding="utf-8") as f:
             self.data = json.load(f)
 
-        # 按时间戳对 homework.json 每一科进行排序并写回文件
-        # ! 由于“More Timeshow”功能需要，此功能需要重写
-        # TODO : 重构排序
+        # 按规则对每个科目的作业列表排序并在发生变更时写回文件。
+        def _sort_key(item):
+            t = item.get("time", 0)
+            # 规范化字符串值
+            if isinstance(t, str):
+                s = t.strip()
+                if s == "?!":
+                    return (0, 0)
+                if s == "?":
+                    return (3, 0)
+                if s == "0":
+                    return (2, 0)
+                # 尝试将可能的数字字符串解析为数值时间戳
+                try:
+                    num = float(s)
+                    if num == 0:
+                        return (2, 0)
+                    return (1, num)
+                except Exception:
+                    # 未知字符串视为最低优先级（等同于 ?）
+                    return (3, 0)
+            else:
+                # 非字符串（通常为 int/float）
+                try:
+                    num = float(t)
+                    if num == 0:
+                        return (2, 0)
+                    return (1, num)
+                except Exception:
+                    return (3, 0)
+
+        # 对每个 subject 列表应用稳定排序，若发生变化则写回文件一次
+        _changed = False
+        for key in self.subject_codes:
+            orig = self.data.get(key, [])
+            # 使用稳定排序，保留相同键的原始相对顺序
+            sorted_list = sorted(orig, key=_sort_key)
+            if sorted_list != orig:
+                self.data[key] = sorted_list
+                _changed = True
+        if _changed:
+            try:
+                with open(DATA, "w", encoding="utf-8") as f:
+                    json.dump(self.data, f, ensure_ascii=False, indent=4)
+            except Exception:
+                # 写入失败不应导致程序崩溃，继续显示已有内容
+                pass
 
         # 清空当前显示列表
         self.homework_list = []
