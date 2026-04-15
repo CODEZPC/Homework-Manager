@@ -17,7 +17,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.11 indev 2"
+VERSION = "1.3.11 indev 3"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -436,7 +436,7 @@ class HomeworkTool:
         new_window.title("作业管理器·新建作业")
         new_window.config(bg="#23272E")
         new_window.resizable(False, False)
-        # new_window.attributes("-topmost", True)
+        new_window.attributes("-topmost", True)
 
         Label(new_window, text=" ").grid(row=0, column=0)
         Label(new_window, text=" ").grid(row=999, column=999)
@@ -461,7 +461,9 @@ class HomeworkTool:
 
         Label(new_window, text="  截止时间  ", bg="#23272E").grid(row=3, column=1)
         if deadline_timestamp is not None:
-            if deadline_timestamp == 0:
+            if deadline_timestamp == "?" or deadline_timestamp == "?!":
+                time_value = deadline_timestamp
+            elif deadline_timestamp == 0:
                 time_value = "0"
             else:
                 time_value = time.strftime(
@@ -527,11 +529,27 @@ class HomeworkTool:
                 new_window.focus()
                 new_window.after(2000, lambda: time_entry.config(fg="#C8C8C8"))
 
+        def show_help():
+            help_window = Toplevel(tk)
+            help_window.title("作业管理器·帮助")
+            help_window.config(bg="#23272E")
+            help_window.resizable(False, False)
+            help_window.attributes("-topmost", True)
+
+            Label(
+                help_window,
+                text="截止时间格式：YYYY/MM/DD HH:MM\n\n特殊值如下\n0 - 暂时不收\n? - 未知\n?! - 不定期（检查/收）",
+                font=("HYWenHei-85W", 14),
+            ).grid(row=1, column=1, padx=20, pady=20)
+
         Button(new_window, text="提交", command=submit, relief=FLAT).grid(
             row=4, column=2, sticky="e"
         )
         Button(new_window, text="取消", command=new_window.destroy, relief=FLAT).grid(
             row=4, column=2, sticky="w"
+        )
+        Button(new_window, text="帮助", command=show_help, relief=FLAT).grid(
+            row=4, column=2, sticky="s"
         )
         # 将窗口居中偏下显示（不改变窗口大小）
         new_window.update_idletasks()
