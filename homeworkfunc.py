@@ -35,6 +35,8 @@ SUBJECT_DISPLAY_NAMES = [
     "其他",
 ]
 
+SPECIAL_OPERATIONS = ["?", "?!"]
+
 TIME_OUT = 300
 
 

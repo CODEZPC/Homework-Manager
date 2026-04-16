@@ -16,8 +16,8 @@ import homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
-DATA = "homework.json"
-VERSION = "1.3.11 indev 3"
+DATA = "homework_stress.json"
+VERSION = "1.3.11 indev 4"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -150,17 +150,6 @@ class HomeworkTool:
                 if s == "?!":
                     return (0, 0)
                 if s == "?":
-                    return (3, 0)
-                if s == "0":
-                    return (2, 0)
-                # 尝试将可能的数字字符串解析为数值时间戳
-                try:
-                    num = float(s)
-                    if num == 0:
-                        return (2, 0)
-                    return (1, num)
-                except Exception:
-                    # 未知字符串视为最低优先级（等同于 ?）
                     return (3, 0)
             else:
                 # 非字符串（通常为 int/float）
@@ -487,7 +476,7 @@ class HomeworkTool:
             content = content_entry.get()
             deadline_str = time_entry.get()
             try:
-                if deadline_str == "?" or deadline_str == "?!":
+                if deadline_str in homeworkfunc.SPECIAL_OPERATIONS:
                     new_deadline_ts = deadline_str
                 elif deadline_str == "0":
                     new_deadline_ts = 0
