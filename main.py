@@ -16,8 +16,8 @@ import homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
-DATA = "homework_stress.json"
-VERSION = "1.3.11 indev 4"
+DATA = "homework.json"
+VERSION = "1.3.11 indev 5"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -147,19 +147,23 @@ class HomeworkTool:
             # 规范化字符串值
             if isinstance(t, str):
                 s = t.strip()
-                if s == "?!":
+                if s == "!?":
                     return (0, 0)
+                if s == "?!":
+                    return (0, 1)
+                if s == "*":
+                    return (2, 0)
                 if s == "?":
-                    return (3, 0)
+                    return (2, 2)
             else:
                 # 非字符串（通常为 int/float）
                 try:
                     num = float(t)
                     if num == 0:
-                        return (2, 0)
+                        return (2, 1)
                     return (1, num)
                 except Exception:
-                    return (3, 0)
+                    return (2, 2)
 
         # 对每个 subject 列表应用稳定排序，若发生变化则写回文件一次
         _changed = False
@@ -450,7 +454,7 @@ class HomeworkTool:
 
         Label(new_window, text="  截止时间  ", bg="#23272E").grid(row=3, column=1)
         if deadline_timestamp is not None:
-            if deadline_timestamp == "?" or deadline_timestamp == "?!":
+            if deadline_timestamp in homeworkfunc.SPECIAL_OPERATIONS:
                 time_value = deadline_timestamp
             elif deadline_timestamp == 0:
                 time_value = "0"
@@ -527,7 +531,7 @@ class HomeworkTool:
 
             Label(
                 help_window,
-                text="截止时间格式：YYYY/MM/DD HH:MM\n\n特殊值如下\n0 - 暂时不收\n? - 未知\n?! - 不定期（检查/收）",
+                text="""截止时间格式：YYYY/MM/DD HH:MM\n特殊值如下\n0 - 暂时不收\n? - 未知\n?! - 不定期（检查/收）\n!? - 近期\n* - 随时自行提交""",
                 font=("HYWenHei-85W", 14),
             ).grid(row=1, column=1, padx=20, pady=20)
 
