@@ -17,7 +17,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.11 indev 5"
+VERSION = "1.3.12.1"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -294,11 +294,11 @@ class HomeworkTool:
                 self.reminder_schedule.remove(self._page_aid)
             except Exception:
                 pass
-        
+
         for i, j in enumerate(self.homework_list):
             j.config(text=self.homework_page_list[i][0])
             self.homework_page_list[i].append(self.homework_page_list[i].pop(0))
-        
+
         self._page_aid = tk.after(time * 1000, self.roll_show)
         self.reminder_schedule.append(self._page_aid)
 
@@ -336,8 +336,8 @@ class HomeworkTool:
             tk,
             fg=COLOR,
         )
-        for process in psutil.process_iter(['name']):
-            if process.info['name'].lower() == "classisland.desktop.exe":
+        for process in psutil.process_iter(["name"]):
+            if process.info["name"].lower() == "classisland.desktop.exe":
                 homeworkfunc.uri_classisland("homeworkmode-on")
                 break
         else:
@@ -453,15 +453,18 @@ class HomeworkTool:
             content_entry.insert(0, content_text)
 
         Label(new_window, text="  截止时间  ", bg="#23272E").grid(row=3, column=1)
+
+        # * 重要：时间解析位
         if deadline_timestamp is not None:
-            if deadline_timestamp in homeworkfunc.SPECIAL_OPERATIONS:
-                time_value = deadline_timestamp
-            elif deadline_timestamp == 0:
-                time_value = "0"
-            else:
+            try:
+                if deadline_timestamp == 0:
+                    raise TypeError
+
                 time_value = time.strftime(
                     "%Y/%m/%d %H:%M", time.localtime(deadline_timestamp)
                 )
+            except TypeError:
+                time_value = deadline_timestamp
         else:
             time_value = time.strftime("%Y/%m/%d 22:10", time.localtime(time.time()))
 
@@ -479,48 +482,44 @@ class HomeworkTool:
             new_subject_key = self.subject_codes[new_subject_index]
             content = content_entry.get()
             deadline_str = time_entry.get()
+
+            # * 重要：时间解析位
             try:
-                if deadline_str in homeworkfunc.SPECIAL_OPERATIONS:
-                    new_deadline_ts = deadline_str
-                elif deadline_str == "0":
-                    new_deadline_ts = 0
-                else:
-                    new_deadline_ts = int(
-                        time.mktime(time.strptime(deadline_str, "%Y/%m/%d %H:%M"))
-                    )
-                new_item = {"content": content, "time": new_deadline_ts}
-                if replace_target:
-                    orig_key, orig_index = replace_target
-                    if orig_key == new_subject_key:
-                        try:
-                            self.data[orig_key][orig_index] = new_item
-                        except Exception:
-                            self.data[new_subject_key].append(new_item)
-                    else:
-                        try:
-                            self.data[orig_key].pop(orig_index)
-                        except Exception:
-                            try:
-                                for idx, it in enumerate(self.data[orig_key]):
-                                    if it.get("content") == content:
-                                        self.data[orig_key].pop(idx)
-                                        break
-                            except Exception:
-                                pass
+                if deadline_str == "0":
+                    raise ValueError
+
+                new_deadline_ts = int(
+                    time.mktime(time.strptime(deadline_str, "%Y/%m/%d %H:%M"))
+                )
+            except ValueError:
+                new_deadline_ts = deadline_str
+
+            new_item = {"content": content, "time": new_deadline_ts}
+            if replace_target:
+                orig_key, orig_index = replace_target
+                if orig_key == new_subject_key:
+                    try:
+                        self.data[orig_key][orig_index] = new_item
+                    except Exception:
                         self.data[new_subject_key].append(new_item)
                 else:
+                    try:
+                        self.data[orig_key].pop(orig_index)
+                    except Exception:
+                        try:
+                            for idx, it in enumerate(self.data[orig_key]):
+                                if it.get("content") == content:
+                                    self.data[orig_key].pop(idx)
+                                    break
+                        except Exception:
+                            pass
                     self.data[new_subject_key].append(new_item)
-                with open(DATA, "w", encoding="utf-8") as f:
-                    json.dump(self.data, f, ensure_ascii=False, indent=4)
-                self.draw_homework()
-                new_window.destroy()
-            except ValueError:
-                messagebox.showerror(
-                    "作业管理器·错误", "截止时间格式错误，应为 YYYY/MM/DD HH:MM 或 0"
-                )
-                time_entry.config(fg="#FF2C2C")
-                new_window.focus()
-                new_window.after(2000, lambda: time_entry.config(fg="#C8C8C8"))
+            else:
+                self.data[new_subject_key].append(new_item)
+            with open(DATA, "w", encoding="utf-8") as f:
+                json.dump(self.data, f, ensure_ascii=False, indent=4)
+            self.draw_homework()
+            new_window.destroy()
 
         def show_help():
             help_window = Toplevel(tk)
@@ -531,7 +530,7 @@ class HomeworkTool:
 
             Label(
                 help_window,
-                text="""截止时间格式：YYYY/MM/DD HH:MM\n特殊值如下\n0 - 暂时不收\n? - 未知\n?! - 不定期（检查/收）\n!? - 近期\n* - 随时自行提交""",
+                text="""截止时间格式：YYYY/MM/DD HH:MM\n或者输入任意字符以自定义信息""",
                 font=("HYWenHei-85W", 14),
             ).grid(row=1, column=1, padx=20, pady=20)
 

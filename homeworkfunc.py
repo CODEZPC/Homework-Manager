@@ -35,8 +35,6 @@ SUBJECT_DISPLAY_NAMES = [
     "其他",
 ]
 
-SPECIAL_OPERATIONS = ["?", "?!", "!?", "*"]
-
 ENABLE_CLASSISLAND = False
 
 TIME_OUT = 300
@@ -46,15 +44,8 @@ def analyze_time(timestamp):
     """
     计算目标时间与当前时间的关系，返回一个字符串表示目标时间的状态。
     """
-    if timestamp in SPECIAL_OPERATIONS:
-        if timestamp == "?":
-            return ("未知", 0)
-        if timestamp == "?!":
-            return ("不定期", 1)
-        if timestamp == "!?":
-            return ("近期", 1)
-        if timestamp == "*":
-            return ("随时自行提交", 1)
+    if isinstance(timestamp, str):
+        return (timestamp, 1)
     we = ["日", "一", "二", "三", "四", "五", "六"]
     time_day_start = time.mktime(
         time.strptime(
