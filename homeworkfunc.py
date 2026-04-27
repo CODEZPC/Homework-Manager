@@ -37,6 +37,8 @@ SUBJECT_DISPLAY_NAMES = [
 
 SPECIAL_OPERATIONS = ["?", "?!", "!?", "*"]
 
+ENABLE_CLASSISLAND = False
+
 TIME_OUT = 300
 
 
@@ -183,7 +185,8 @@ def uri_classisland(uri, mode="run"):
     :param uri: 要解析的 URI 字符串
     :param mode: 解析模式，默认为 "run"，表示直接运行解析结果 -> ["run", "revert"]
     """
-    subprocess.Popen(f"start classisland://app/api/automation/{mode}/{uri}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if ENABLE_CLASSISLAND:
+        subprocess.Popen(f"start classisland://app/api/automation/{mode}/{uri}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
 if __name__ == "__main__":
