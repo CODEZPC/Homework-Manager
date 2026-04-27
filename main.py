@@ -17,7 +17,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.12.1"
+VERSION = "1.3.12.2"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -146,15 +146,7 @@ class HomeworkTool:
             t = item.get("time", 0)
             # 规范化字符串值
             if isinstance(t, str):
-                s = t.strip()
-                if s == "!?":
-                    return (0, 0)
-                if s == "?!":
-                    return (0, 1)
-                if s == "*":
-                    return (2, 0)
-                if s == "?":
-                    return (2, 2)
+                return (2, 2)
             else:
                 # 非字符串（通常为 int/float）
                 try:
