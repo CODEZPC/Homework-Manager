@@ -17,7 +17,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.12.2"
+VERSION = "1.3.12.3"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -478,7 +478,7 @@ class HomeworkTool:
             # * 重要：时间解析位
             try:
                 if deadline_str == "0":
-                    raise ValueError
+                    new_deadline_ts = 0
 
                 new_deadline_ts = int(
                     time.mktime(time.strptime(deadline_str, "%Y/%m/%d %H:%M"))
