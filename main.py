@@ -17,7 +17,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.12.3"
+VERSION = "1.3.12.4"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -479,12 +479,15 @@ class HomeworkTool:
             try:
                 if deadline_str == "0":
                     new_deadline_ts = 0
+                    raise KeyboardInterrupt
 
                 new_deadline_ts = int(
                     time.mktime(time.strptime(deadline_str, "%Y/%m/%d %H:%M"))
                 )
             except ValueError:
                 new_deadline_ts = deadline_str
+            except KeyboardInterrupt:
+                pass
 
             new_item = {"content": content, "time": new_deadline_ts}
             if replace_target:
