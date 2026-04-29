@@ -17,7 +17,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.12.4"
+VERSION = "1.3.12.5"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -477,7 +477,7 @@ class HomeworkTool:
 
             # * 重要：时间解析位
             try:
-                if deadline_str == "0":
+                if deadline_str == "0" or deadline_str == "":
                     new_deadline_ts = 0
                     raise KeyboardInterrupt
 
