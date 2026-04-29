@@ -540,8 +540,8 @@ class HomeworkTool:
 
             Label(
                 help_window,
-                text="""截止时间格式：YYYY/MM/DD HH:MM\n或者输入任意字符以自定义信息""",
-                font=("HYWenHei-85W", 14),
+                text="""截止时间格式：YYYY/MM/DD HH:MM\n0或留空代表暂时不收\n或者输入任意字符以自定义信息\n\nIF [Time] was defined, whether in standard\ntime format or 0, [Emphasize] will be IGNORED\nbut still stored, and the display style\nwill CHANGE over time.""",
+                font=("Jetbrains Mono", 14),
             ).grid(row=1, column=1, padx=20, pady=20)
 
         Button(new_window, text="提交", command=submit, relief=FLAT).grid(
