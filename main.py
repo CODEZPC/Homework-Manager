@@ -17,7 +17,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.12.5"
+VERSION = "1.3.13.1"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -48,6 +48,7 @@ class HomeworkTool:
         self.homework_page_list = []  # 作业内容存储
         self.subject_codes = homeworkfunc.SUBJECT_CODES
         self.subject_display_names = homeworkfunc.SUBJECT_DISPLAY_NAMES
+        self.emphasize_levels = homeworkfunc.EMPHASIZE_LEVELS
         self.reminder_schedule = []  # 计划的tk.after
 
         # 各类定时器的 id（用于取消），初始化为 None
@@ -193,7 +194,7 @@ class HomeworkTool:
                         text=content[0],
                     )
                 )
-                if homeworkfunc.analyze_time(k["time"])[1] == -1:
+                if homeworkfunc.analyze_time(k["time"], k["emphasize"])[1] == -1:
                     self.homework_list[-1].config(fg=COLOR)
 
             if keyboard.is_pressed("tab"):
@@ -241,7 +242,7 @@ class HomeworkTool:
         upload = 0
         for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
-                time_status = homeworkfunc.analyze_time(k["time"])
+                time_status = homeworkfunc.analyze_time(k["time"], k["emphasize"])
                 self.time_list.append(
                     Label(
                         tk,
@@ -409,6 +410,7 @@ class HomeworkTool:
 
     def new_homework(
         self,
+        emphasize_index=None,
         subject_index=None,
         content_text=None,
         deadline_timestamp=None,
@@ -469,11 +471,24 @@ class HomeworkTool:
         )
         time_entry.grid(row=3, column=2)
 
+        Label(new_window, text="Emphasize", bg="#23272E").grid(row=4, column=1)
+        emphasize_var = StringVar(new_window)
+        if emphasize_index is not None and 0 <= emphasize_index < len(
+            self.emphasize_levels
+        ):
+            emphasize_var.set(self.emphasize_levels[emphasize_index])
+        else:
+            emphasize_var.set(self.emphasize_levels[2])
+        OptionMenu(new_window, emphasize_var, *self.emphasize_levels).grid(
+            row=4, column=2
+        )
+
         def submit():
             new_subject_index = self.subject_display_names.index(subject_var.get())
             new_subject_key = self.subject_codes[new_subject_index]
             content = content_entry.get()
             deadline_str = time_entry.get()
+            new_emphasize = emphasize_var.get()
 
             # * 重要：时间解析位
             try:
@@ -489,7 +504,7 @@ class HomeworkTool:
             except KeyboardInterrupt:
                 pass
 
-            new_item = {"content": content, "time": new_deadline_ts}
+            new_item = {"content": content, "time": new_deadline_ts, "emphasize": new_emphasize}
             if replace_target:
                 orig_key, orig_index = replace_target
                 if orig_key == new_subject_key:
@@ -530,13 +545,13 @@ class HomeworkTool:
             ).grid(row=1, column=1, padx=20, pady=20)
 
         Button(new_window, text="提交", command=submit, relief=FLAT).grid(
-            row=4, column=2, sticky="e"
+            row=5, column=2, sticky="e"
         )
         Button(new_window, text="取消", command=new_window.destroy, relief=FLAT).grid(
-            row=4, column=2, sticky="w"
+            row=5, column=2, sticky="w"
         )
         Button(new_window, text="帮助", command=show_help, relief=FLAT).grid(
-            row=4, column=2, sticky="s"
+            row=5, column=2, sticky="s"
         )
         # 将窗口居中偏下显示（不改变窗口大小）
         new_window.update_idletasks()
@@ -573,8 +588,10 @@ class HomeworkTool:
                         subject_index = 0
                     content_text = j.get("content", "")
                     deadline_ts = j.get("time", 0)
+                    emphasize_index = self.emphasize_levels.index(j["emphasize"])
                     orig_index = self.data[subject_key].index(j)
                     self.new_homework(
+                        emphasize_index=emphasize_index,
                         subject_index=subject_index,
                         content_text=content_text,
                         deadline_timestamp=deadline_ts,

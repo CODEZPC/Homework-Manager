@@ -35,17 +35,29 @@ SUBJECT_DISPLAY_NAMES = [
     "其他",
 ]
 
+EMPHASIZE_LEVELS = ["Ignored", "Unimportant", "Standard", "Urgent"]
+
 ENABLE_CLASSISLAND = True
 
 TIME_OUT = 300
 
 
-def analyze_time(timestamp):
+def analyze_time(timestamp, emphasize="Standard"):
     """
     计算目标时间与当前时间的关系，返回一个字符串表示目标时间的状态。
     """
+    def emphasize_prefix(level):
+        if level == "Ignored":
+            return -1
+        elif level == "Unimportant":
+            return 0
+        elif level == "Standard":
+            return 1
+        elif level == "Urgent":
+            return 3
+
     if isinstance(timestamp, str):
-        return (timestamp, 1)
+        return (timestamp, emphasize_prefix(emphasize))
     we = ["日", "一", "二", "三", "四", "五", "六"]
     time_day_start = time.mktime(
         time.strptime(
@@ -66,7 +78,7 @@ def analyze_time(timestamp):
     elif timestamp < time.time():
         return ("现在收", 4)
     elif timestamp < time.time() + TIME_OUT:
-        return ("即将收", 2)
+        return ("即将收", 1)
     elif timestamp < time_day_start + 86400:
         return (f"{t}收", 1)
     elif timestamp < time_day_start + 86400 * 2:
