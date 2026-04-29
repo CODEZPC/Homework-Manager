@@ -386,7 +386,7 @@ class HomeworkTool:
 
     def info(self):
         self.ui_debuginfo.config(
-            text=f"Homework Manager {VERSION} {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())} Mouse: ({self.mousex}, {self.mousey}) {mouse.is_pressed() if mouse else 'N/A'} Homeworks: {len(self.homework_list)}/{self.HOMEWORK_LIMIT}"
+            text=f"Homework Manager {VERSION} {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())} Mouse: ({self.mousex}, {self.mousey}) {mouse.is_pressed() if mouse else 'N/A'} Homeworks: {len(self.homework_list)}/{self.HOMEWORK_LIMIT} Tick: {self.tick}"
         )
         tk.after(33, self.info)
 
