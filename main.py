@@ -17,7 +17,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.13.1"
+VERSION = "1.3.13.2"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -50,10 +50,15 @@ class HomeworkTool:
         self.subject_display_names = homeworkfunc.SUBJECT_DISPLAY_NAMES
         self.emphasize_levels = homeworkfunc.EMPHASIZE_LEVELS
         self.reminder_schedule = []  # 计划的tk.after
+        for self.HOMEWORK_LIMIT in range(1000):
+            if self.HOMEWORK_LIMIT * 30 + 40 >= tk.winfo_screenheight() - 40:
+                break
 
         # 各类定时器的 id（用于取消），初始化为 None
         self._upload_aid = None
         self._title_aid = None
+
+        self.mousex, self.mousey = 0, 0
 
         # 校验资源完整性
         homeworkfunc.resource_check(self.subject_codes)
@@ -67,6 +72,7 @@ class HomeworkTool:
         # 自动隐藏按钮的计时器
         self.tick = 0
         tk.after(1, self.on_tick)
+        self.info()
 
     def on_tick(self):
         """
@@ -375,6 +381,15 @@ class HomeworkTool:
             tk, text="E", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
         )
 
+        self.ui_debuginfo = Label(tk, text="", fg=COLOR, font=("JetBrains Mono", 7))
+        self.ui_debuginfo.place(x=10, y=tk.winfo_screenheight() - 20)
+
+    def info(self):
+        self.ui_debuginfo.config(
+            text=f"Homework Manager {VERSION} {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())} Mouse: ({self.mousex}, {self.mousey}) {mouse.is_pressed() if mouse else 'N/A'} Homeworks: {len(self.homework_list)}/{self.HOMEWORK_LIMIT}"
+        )
+        tk.after(33, self.info)
+
     def clear_homework(self):
         # 清理所有“时间已过”的作业（时间戳非0且早于当前时间10分钟以前）
         removed = 0
@@ -416,7 +431,7 @@ class HomeworkTool:
         deadline_timestamp=None,
         replace_target=None,
     ):
-        if len(self.homework_list) * 30 + 40 >= tk.winfo_screenheight() - 40:
+        if len(self.homework_list) >= self.HOMEWORK_LIMIT:
             messagebox.showerror("作业管理器·超过上限", "作业数量已达上限")
             return
         new_window = Toplevel(tk)
@@ -504,7 +519,11 @@ class HomeworkTool:
             except KeyboardInterrupt:
                 pass
 
-            new_item = {"content": content, "time": new_deadline_ts, "emphasize": new_emphasize}
+            new_item = {
+                "content": content,
+                "time": new_deadline_ts,
+                "emphasize": new_emphasize,
+            }
             if replace_target:
                 orig_key, orig_index = replace_target
                 if orig_key == new_subject_key:
@@ -604,6 +623,7 @@ class HomeworkTool:
         self.tick = 0
         x = event.x_root - tk.winfo_rootx()
         y = event.y_root - tk.winfo_rooty()
+        self.mousex, self.mousey = x, y
 
         inv = 35 if len(self.homework_list) < 10 else 30
         self.arg = int((y - 40) // inv)
