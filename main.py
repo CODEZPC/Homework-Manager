@@ -17,7 +17,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.13.3"
+VERSION = "1.3.13.4"
 
 
 def acquire_lock(lock_path="homework.lock"):
@@ -493,7 +493,7 @@ class HomeworkTool:
         ):
             emphasize_var.set(self.emphasize_levels[emphasize_index])
         else:
-            emphasize_var.set(self.emphasize_levels[2])
+            emphasize_var.set(self.emphasize_levels[0])
         OptionMenu(new_window, emphasize_var, *self.emphasize_levels).grid(
             row=4, column=2
         )

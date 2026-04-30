@@ -35,19 +35,21 @@ SUBJECT_DISPLAY_NAMES = [
     "其他",
 ]
 
-EMPHASIZE_LEVELS = ["很低", "低", "标准", "高"]
+EMPHASIZE_LEVELS = ["自动", "很低", "低", "标准", "高"]
 
 ENABLE_CLASSISLAND = True
 
 TIME_OUT = 300
 
 
-def analyze_time(timestamp, emphasize="标准"):
+def analyze_time(timestamp, emphasize="自动"):
     """
     计算目标时间与当前时间的关系，返回一个字符串表示目标时间的状态。
     """
     def emphasize_prefix(level):
-        if level == "很低":
+        if level == "自动":
+            return 1
+        elif level == "很低":
             return -1
         elif level == "低":
             return 0
@@ -69,8 +71,9 @@ def analyze_time(timestamp, emphasize="标准"):
     week_now = time.strftime("%w", time.localtime(time_now))
     t = time.strftime("%H:%M", time.localtime(timestamp))
     w = time.strftime("%w", time.localtime(timestamp))
+    auto = emphasize == "自动"
     if timestamp == 0:
-        return ("暂时不收", 0)
+        return ("暂时不收", 0 if auto else emphasize_prefix(emphasize))
     elif timestamp < time.time() - TIME_OUT:
         return ("时间已过", -1)
     elif timestamp < time.time() - 60:
@@ -80,15 +83,15 @@ def analyze_time(timestamp, emphasize="标准"):
     elif timestamp < time.time() + TIME_OUT:
         return ("即将收", 1)
     elif timestamp < time_day_start + 86400:
-        return (f"{t}收", 1)
+        return (f"{t}收", 1 if auto else emphasize_prefix(emphasize))
     elif timestamp < time_day_start + 86400 * 2:
-        return (f"明天{t}收", 1)
+        return (f"明天{t}收", 1 if auto else emphasize_prefix(emphasize))
     elif timestamp < time_day_start + 86400 * 3:
-        return (f"后天{t}收", 0)
+        return (f"后天{t}收", 0 if auto else emphasize_prefix(emphasize))
     elif timestamp < time_day_start + 86400 * (8 - int(week_now)):
-        return (f"周{we[int(w)]}{t}收", 0)
+        return (f"周{we[int(w)]}{t}收", 0 if auto else emphasize_prefix(emphasize))
     elif timestamp < time_day_start + 86400 * (15 - int(week_now)):
-        return (f"下周{we[int(w)]}{t}收", 0)
+        return (f"下周{we[int(w)]}{t}收", 0 if auto else emphasize_prefix(emphasize))
     else:
         return (f"{time.strftime('%Y/%m/%d', time.localtime(timestamp))}收", 0)
 
