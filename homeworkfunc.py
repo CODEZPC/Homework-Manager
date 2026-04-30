@@ -81,7 +81,7 @@ def analyze_time(timestamp, emphasize="自动"):
     elif timestamp < time.time():
         return ("现在收", 4)
     elif timestamp < time.time() + TIME_OUT:
-        return ("即将收", 1)
+        return ("即将收", 1 if auto else emphasize_prefix(emphasize))
     elif timestamp < time_day_start + 86400:
         return (f"{t}收", 1 if auto else emphasize_prefix(emphasize))
     elif timestamp < time_day_start + 86400 * 2:
