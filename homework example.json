@@ -1,17 +1,17 @@
 {
-    "VER" : 1,
+    "VER": 2,
     "C": [
         {
             "content": "This file is used to store homework information, including content and time. The content is a string, and the time is a timestamp (0 for no time set). The file is in JSON format.",
             "time": 0,
-            "emphasize": "Standard"
+            "emphasize": "标准"
         }
     ],
     "M": [
         {
             "content": "C is for Chinese homework, M is for Math homework, E is for English homework, P1 is for Politics Class D1 homework, H1 is for History Class D1 homework, G1 is for Geography Class D1 homework, PH1 is for Physics Class D1 homework, PH2 is for Physics Class D2 homework, CH1 is for Chemistry Class D1 homework, CH2 is for Chemistry Class D2 homework, B1 is for Biology Class D1 homework, OTH is for other subjects' homework.",
             "time": 0,
-            "emphasize": "Standard"
+            "emphasize": "标准"
         }
     ],
     "E": [],

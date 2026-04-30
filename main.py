@@ -486,7 +486,7 @@ class HomeworkTool:
         )
         time_entry.grid(row=3, column=2)
 
-        Label(new_window, text="Emphasize", bg="#23272E").grid(row=4, column=1)
+        Label(new_window, text="优先级", bg="#23272E").grid(row=4, column=1)
         emphasize_var = StringVar(new_window)
         if emphasize_index is not None and 0 <= emphasize_index < len(
             self.emphasize_levels

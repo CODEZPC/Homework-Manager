@@ -35,25 +35,25 @@ SUBJECT_DISPLAY_NAMES = [
     "其他",
 ]
 
-EMPHASIZE_LEVELS = ["Ignored", "Unimportant", "Standard", "Urgent"]
+EMPHASIZE_LEVELS = ["很低", "低", "标准", "高"]
 
 ENABLE_CLASSISLAND = True
 
 TIME_OUT = 300
 
 
-def analyze_time(timestamp, emphasize="Standard"):
+def analyze_time(timestamp, emphasize="标准"):
     """
     计算目标时间与当前时间的关系，返回一个字符串表示目标时间的状态。
     """
     def emphasize_prefix(level):
-        if level == "Ignored":
+        if level == "很低":
             return -1
-        elif level == "Unimportant":
+        elif level == "低":
             return 0
-        elif level == "Standard":
+        elif level == "标准":
             return 1
-        elif level == "Urgent":
+        elif level == "高":
             return 3
 
     if isinstance(timestamp, str):
