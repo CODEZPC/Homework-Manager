@@ -16,7 +16,7 @@ import homeworkfunc as homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.4.0"
+VERSION = "1.4.1"
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -73,6 +73,7 @@ class HomeworkTool:
         self.tick = 0
         tk.after(1, self.on_tick)
         self.info()
+        self.ui_pack()
 
     def on_tick(self):
         """
@@ -209,7 +210,9 @@ class HomeworkTool:
             if status == -1:
                 fill = COLOR
             # 在 canvas 内使用 (0, y) 放置，anchor='nw' 以左上角对齐，保证与原来 place(x=45,y=40+...) 对齐
-            item = self.list_canvas.create_text(0, y, text=text, anchor="nw", fill=fill, font=("JetBrains Mono", 18))
+            item = self.list_canvas.create_text(
+                0, y, text=text, anchor="nw", fill=fill, font=("JetBrains Mono", 18)
+            )
             self.canvas_items.append(item)
             self.homework_list.append(text)
             bbox = self.list_canvas.bbox(item)
@@ -353,13 +356,41 @@ class HomeworkTool:
 
     def ui_pack(self):
         self.ui_title.place_forget()
-        self.ui_debuginfo.place_forget()
+        self.ui_info_basic.place_forget()
+        self.ui_info_time.place_forget()
+        self.ui_info_mouse.place_forget()
+        self.ui_info_homework.place_forget()
+        self.ui_info_tick.place_forget()
         self.mask_left.place_forget()
         self.mask_right.place_forget()
 
         self.mask_left.place(x=0, y=0, relheight=1)
         self.mask_right.place(x=tk.winfo_screenwidth() - 17, y=0, relheight=1)
-        self.ui_debuginfo.place(x=10, y=tk.winfo_screenheight() - 20)
+        self.ui_info_basic.place(x=10, y=tk.winfo_screenheight() - 20)
+        self.ui_info_mouse.place(
+            x=homeworkfunc.getwidth(self.ui_info_basic, tk)
+            + self.ui_info_basic.winfo_x()
+            + 10,
+            y=tk.winfo_screenheight() - 20,
+        )
+        self.ui_info_time.place(
+            x=homeworkfunc.getwidth(self.ui_info_mouse, tk)
+            + self.ui_info_mouse.winfo_x()
+            + 10,
+            y=tk.winfo_screenheight() - 20,
+        )
+        self.ui_info_homework.place(
+            x=homeworkfunc.getwidth(self.ui_info_time, tk)
+            + self.ui_info_time.winfo_x()
+            + 10,
+            y=tk.winfo_screenheight() - 20,
+        )
+        self.ui_info_tick.place(
+            x=homeworkfunc.getwidth(self.ui_info_homework, tk)
+            + self.ui_info_homework.winfo_x()
+            + 10,
+            y=tk.winfo_screenheight() - 20,
+        )
         if not homeworkfunc.uri_classisland("homeworkmode-on"):
             self.ui_title.place(x=10, y=5)
 
@@ -425,20 +456,67 @@ class HomeworkTool:
             tk, text="E", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
         )
 
-        self.ui_debuginfo = Label(tk, text="", fg=COLOR, font=("JetBrains Mono", 7))
         # 创建用于显示作业列表的 Canvas（替代多个 Label）
         self.list_canvas = Canvas(tk, bg="#23272E", highlightthickness=0)
         try:
             canvas_width = self.POSITION_TIME_DISPLAY_X - 50
         except Exception:
             canvas_width = 1000
-        self.list_canvas.place(x=45, y=40, width=canvas_width, height=tk.winfo_screenheight() - 80)
-
-    def info(self):
-        self.ui_debuginfo.config(
-            text=f"Homework Manager {VERSION} {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())} Mouse: ({self.mousex}, {self.mousey}) Homeworks: {len(self.homework_list)}/{self.HOMEWORK_LIMIT} Tick: {self.tick}"
+        self.list_canvas.place(
+            x=45, y=40, width=canvas_width, height=tk.winfo_screenheight() - 60
         )
-        tk.after(33, self.info)
+
+        self.ui_info_basic = Label(
+            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+        )  # 用于显示基本信息
+        self.ui_info_time = Label(
+            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+        )  # 用于显示时间状态
+        self.ui_info_mouse = Label(
+            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+        )  # 用于显示鼠标位置
+        self.ui_info_homework = Label(
+            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+        )  # 用于显示作业数量
+        self.ui_info_tick = Label(
+            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+        )  # 用于显示 tick 计数
+
+    def info(self, homework_exceed=0):
+        homework = len(self.homework_list)
+        if homework > self.HOMEWORK_LIMIT:
+            homework_exceed = homework_exceed + 1
+            if homework_exceed > 31:
+                homework_exceed = 1
+        else:
+            homework_exceed = 0
+
+        self.ui_info_basic.config(text=f"Homework Manager {VERSION}")
+
+        self.ui_info_time.config(
+            text=f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}"
+        )
+
+        if mouse:
+            self.ui_info_mouse.config(
+                text=f"Mouse: ({self.mousex:04d}, {self.mousey:04d})",
+                fg=COLOR,
+            )
+        else:
+            self.ui_info_mouse.config(text="Mouse: (====N/A====)", fg="#FFFF00")
+
+        self.ui_info_homework.config(
+            text=f"Homeworks: {len(self.homework_list):03d}/{self.HOMEWORK_LIMIT:03d}",
+            fg=(
+                COLOR
+                if homework_exceed == 0
+                else ("#FFFF00" if homework_exceed <= 15 else "#000000")
+            ),
+            bg=("#FFFF00" if homework_exceed > 15 else "#23272E")
+        )
+
+        self.ui_info_tick.config(text=f"Tick: {self.tick:03d}")
+        tk.after(33, lambda: self.info(homework_exceed))
 
     def clear_homework(self):
         # 清理所有“时间已过”的作业（时间戳非0且早于当前时间10分钟以前）
