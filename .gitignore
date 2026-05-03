@@ -2,9 +2,9 @@
 desktop.ini
 /dist
 main.spec
-homework.lock
-main-backup.exe
+/src/lock
+*-backup.*
 main.exe
 homework.json
 homework_stress.json
-/__pycache__
+/src/__pycache__
