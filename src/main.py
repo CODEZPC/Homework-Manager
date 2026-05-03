@@ -559,9 +559,6 @@ class HomeworkTool:
         deadline_timestamp=None,
         replace_target=None,
     ):
-        if len(self.homework_list) >= self.HOMEWORK_LIMIT:
-            messagebox.showerror("作业管理器·超过上限", "作业数量已达上限")
-            return
         new_window = Toplevel(tk)
         new_window.title("作业管理器·新建作业")
         new_window.config(bg="#23272E")
@@ -627,6 +624,11 @@ class HomeworkTool:
         )
 
         def submit():
+            if len(self.homework_list) >= self.HOMEWORK_LIMIT:
+                new_window.attributes("-topmost", False)
+                if not messagebox.askyesno("作业管理器·超过上限", "作业数量已达上限，是否强制添加？"):
+                    new_window.attributes("-topmost", True)
+                    return
             new_subject_index = self.subject_display_names.index(subject_var.get())
             new_subject_key = self.subject_codes[new_subject_index]
             content = content_entry.get()
