@@ -16,7 +16,7 @@ import homeworkfunc as homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.4.1"
+VERSION = "1.4.1.1"
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -142,6 +142,7 @@ class HomeworkTool:
         except Exception:
             # 若 canvas 尚未创建，忽略
             pass
+        self.list_canvas.place_forget()  # 隐藏 canvas，后续重新 place
         for i in self.time_list:
             i.place_forget()
         a = Label(tk, text="正在加载...", fg=COLOR, font=("HYWenHei-85W", 24))
@@ -202,6 +203,10 @@ class HomeworkTool:
             if keyboard.is_pressed("tab"):
                 time.sleep(0.6)
 
+        canvas_width = self.POSITION_TIME_DISPLAY_X - 50
+        self.list_canvas.place(
+            x=45, y=40, width=canvas_width, height=tk.winfo_screenheight() - 60
+        )
         inv = 35 if len(all_items) < 10 else 30
         for idx, (text, status) in enumerate(all_items):
             # Canvas 的原点位于屏幕 x=45,y=40，因此在 canvas 内坐标使用相对偏移
@@ -458,10 +463,7 @@ class HomeworkTool:
 
         # 创建用于显示作业列表的 Canvas（替代多个 Label）
         self.list_canvas = Canvas(tk, bg="#23272E", highlightthickness=0)
-        try:
-            canvas_width = self.POSITION_TIME_DISPLAY_X - 50
-        except Exception:
-            canvas_width = 1000
+        canvas_width = self.POSITION_TIME_DISPLAY_X - 50
         self.list_canvas.place(
             x=45, y=40, width=canvas_width, height=tk.winfo_screenheight() - 60
         )
@@ -484,9 +486,11 @@ class HomeworkTool:
 
     def info(self, homework_exceed=0):
         homework = len(self.homework_list)
+        flash_homework = 1e8
         if homework > self.HOMEWORK_LIMIT:
+            flash_homework = max(5, (self.HOMEWORK_LIMIT * 2 - homework) // 3)
             homework_exceed = homework_exceed + 1
-            if homework_exceed > 31:
+            if homework_exceed > flash_homework * 2:
                 homework_exceed = 1
         else:
             homework_exceed = 0
@@ -506,13 +510,13 @@ class HomeworkTool:
             self.ui_info_mouse.config(text="Mouse: (====N/A====)", fg="#FFFF00")
 
         self.ui_info_homework.config(
-            text=f"Homeworks: {len(self.homework_list):03d}/{self.HOMEWORK_LIMIT:03d}",
+            text=f"Homeworks: {f"{homework:02d}" if homework <= self.HOMEWORK_LIMIT + 5 else "-+"}/{self.HOMEWORK_LIMIT:02d}",
             fg=(
                 COLOR
                 if homework_exceed == 0
-                else ("#FFFF00" if homework_exceed <= 15 else "#000000")
+                else ("#FFFF00" if homework_exceed <= flash_homework else "#000000")
             ),
-            bg=("#FFFF00" if homework_exceed > 15 else "#23272E")
+            bg=("#FFFF00" if homework_exceed > flash_homework else "#23272E")
         )
 
         self.ui_info_tick.config(text=f"Tick: {self.tick:03d}")
