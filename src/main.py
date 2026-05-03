@@ -8,19 +8,18 @@ except Exception:
     mouse = None
 import json
 import keyboard
-import psutil
 import sys
 import time
 import msvcrt
-import homeworkfunc
+import homeworkfunc as homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.3.13.4"
+VERSION = "1.4.0"
 
 
-def acquire_lock(lock_path="homework.lock"):
+def acquire_lock(lock_path=".\\lock\\homework.lock"):
     """
     尝试获取一个简单的文件锁（Windows 下使用 msvcrt），
     成功返回打开的文件对象（必须保持引用以维持锁），失败返回 None。
@@ -45,7 +44,9 @@ class HomeworkTool:
         # 列表初始化
         self.homework_list = []  # 作业UI
         self.time_list = []  # 时间UI
-        self.homework_page_list = []  # 作业内容存储
+        self.homework_widths = []  # 作业UI宽度（用于滚动显示）
+        self.need_roll = []  # 需要滚动显示的作业索引
+        self.new_position = []
         self.subject_codes = homeworkfunc.SUBJECT_CODES
         self.subject_display_names = homeworkfunc.SUBJECT_DISPLAY_NAMES
         self.emphasize_levels = homeworkfunc.EMPHASIZE_LEVELS
@@ -56,7 +57,6 @@ class HomeworkTool:
 
         # 各类定时器的 id（用于取消），初始化为 None
         self._upload_aid = None
-        self._title_aid = None
 
         self.mousex, self.mousey = 0, 0
 
@@ -135,9 +135,12 @@ class HomeworkTool:
         for i in self.reminder_schedule:
             tk.after_cancel(i)
 
-        # 隐藏之前的作业显示
-        for i in self.homework_list:
-            i.place_forget()
+        # 清理之前在 canvas 上的显示与时间显示
+        try:
+            self.list_canvas.delete("all")
+        except Exception:
+            # 若 canvas 尚未创建，忽略
+            pass
         for i in self.time_list:
             i.place_forget()
         a = Label(tk, text="正在加载...", fg=COLOR, font=("HYWenHei-85W", 24))
@@ -181,34 +184,40 @@ class HomeworkTool:
                 # 写入失败不应导致程序崩溃，继续显示已有内容
                 pass
 
-        # 清空当前显示列表
-        self.homework_list = []
-        self.homework_page_list = []
+        # 使用 canvas 渲染文本项并缓存宽度与滚动标记
+        self.homework_list = []  # 存放文本内容
+        self.canvas_items = []
+        self.canvas_widths = []
+        self.need_roll = []
 
-        # 重新生成显示内容
-        for i, j in enumerate(self.subject_codes):
+        # 先收集所有文本和状态
+        all_items = []
+        for i, subj in enumerate(self.subject_codes):
             a.config(text=f"正在加载 - {self.subject_display_names[i]}...")
-            for k in self.data[j]:
+            for k in self.data[subj]:
                 content = self.subject_display_names[i] + ":" + k["content"]
-                content = homeworkfunc.split_sentence(
-                    content, self.POSITION_TIME_DISPLAY_X - 45, tk
-                )
-                self.homework_page_list.append(content)
-                self.homework_list.append(
-                    Label(
-                        tk,
-                        text=content[0],
-                    )
-                )
-                if homeworkfunc.analyze_time(k["time"], k["emphasize"])[1] == -1:
-                    self.homework_list[-1].config(fg=COLOR)
-
+                status = homeworkfunc.analyze_time(k["time"], k["emphasize"])[1]
+                all_items.append((content, status))
             if keyboard.is_pressed("tab"):
-                time.sleep(0.6)  # 按住 TAB 可以拖慢加载速度
+                time.sleep(0.6)
 
-        inv = 35 if len(self.homework_list) < 10 else 30
-        for idx, widget in enumerate(self.homework_list):
-            widget.place(x=45, y=40 + idx * inv)
+        inv = 35 if len(all_items) < 10 else 30
+        for idx, (text, status) in enumerate(all_items):
+            # Canvas 的原点位于屏幕 x=45,y=40，因此在 canvas 内坐标使用相对偏移
+            y = idx * inv
+            fill = "#C8C8C8"
+            if status == -1:
+                fill = COLOR
+            # 在 canvas 内使用 (0, y) 放置，anchor='nw' 以左上角对齐，保证与原来 place(x=45,y=40+...) 对齐
+            item = self.list_canvas.create_text(0, y, text=text, anchor="nw", fill=fill, font=("JetBrains Mono", 18))
+            self.canvas_items.append(item)
+            self.homework_list.append(text)
+            bbox = self.list_canvas.bbox(item)
+            width = (bbox[2] - bbox[0]) if bbox else 0
+            self.canvas_widths.append(width)
+            self.need_roll.append(width + 45 > self.POSITION_TIME_DISPLAY_X)
+
+        self.ui_pack()
 
         a.place_forget()  # 隐藏加载提示
         del a  # 删除加载提示对象
@@ -217,10 +226,16 @@ class HomeworkTool:
         self.cooldown(self.ui_top_refresh, "刷新")
         self.cooldown(self.ui_top_clear, "清空")
 
-        # 更新时间显示并计划下一次更新
+        # 更新时间显示并计划下一次更新，启动 canvas 滚动
         self.upload_time_display()
-        tk.after(1, self.roll_show)
-        tk.after(1, self.roll_title)
+        try:
+            if getattr(self, "_page_aid", None) is not None:
+                tk.after_cancel(self._page_aid)
+        except Exception:
+            pass
+        self._page_interval = 33
+        self._page_aid = tk.after(self._page_interval, self.canvas_roll)
+        self.reminder_schedule.append(self._page_aid)
 
     def upload_time_display(self):
         """
@@ -270,7 +285,14 @@ class HomeworkTool:
                     self.time_list[-1].config(bg="#23272E", fg=COLOR)
                 elif time_status[1] == -1:
                     self.time_list[-1].config(bg="#23272E", fg=COLOR)
-                    self.homework_list[idx].config(fg=COLOR)
+                    try:
+                        self.list_canvas.itemconfig(self.canvas_items[idx], fill=COLOR)
+                    except Exception:
+                        # 兼容旧数据结构，如果 canvas_items 不存在则忽略
+                        try:
+                            self.homework_list[idx] = self.homework_list[idx]
+                        except Exception:
+                            pass
                 idx += 1
         inv = 35 if len(self.time_list) < 10 else 30
         for idx, widget in enumerate(self.time_list):
@@ -285,38 +307,61 @@ class HomeworkTool:
         self._upload_aid = tk.after(remaining_seconds * 1000, self.upload_time_display)
         self.reminder_schedule.append(self._upload_aid)
 
-    def roll_show(self, time=8):
-        # 取消上一次的定时器（如果存在）
-        if getattr(self, "_page_aid", None) is not None:
-            try:
-                tk.after_cancel(self._page_aid)
-                self.reminder_schedule.remove(self._page_aid)
-            except Exception:
-                pass
+    def roll_show(self):
+        # Deprecated wrapper: call new canvas_roll
+        return self.canvas_roll()
 
-        for i, j in enumerate(self.homework_list):
-            j.config(text=self.homework_page_list[i][0])
-            self.homework_page_list[i].append(self.homework_page_list[i].pop(0))
+    def canvas_roll(self):
+        # 单帧移动幅度与间隔
+        dx = 2
+        interval = getattr(self, "_page_interval", 33)
+        left_bound = 45
 
-        self._page_aid = tk.after(time * 1000, self.roll_show)
+        # 对每个需要滚动的 canvas 项目移动（使用 canvas 内坐标）
+        canvas_left = self.list_canvas.winfo_x()
+        left_bound_canvas = left_bound - canvas_left
+        target_right_canvas = self.POSITION_TIME_DISPLAY_X - canvas_left
+        for idx, item in enumerate(getattr(self, "canvas_items", [])):
+            if not self.need_roll[idx]:
+                continue
+            bbox = self.list_canvas.bbox(item)
+            if not bbox:
+                continue
+            x1, y1, x2, y2 = bbox
+            # 如果整条文本已经移出左侧（右边界 < left_bound_canvas），把它跳到右侧显示线处（canvas 内坐标）
+            if x2 < left_bound_canvas:
+                # 将文本的左边对齐到全局 POSITION_TIME_DISPLAY_X（转换为 canvas 内坐标）
+                target_left_canvas = self.POSITION_TIME_DISPLAY_X - canvas_left
+                shift = target_left_canvas - x1
+                if shift != 0:
+                    self.list_canvas.move(item, shift, 0)
+            else:
+                self.list_canvas.move(item, -dx, 0)
+
+        # 计划下一帧
+        try:
+            if getattr(self, "_page_aid", None) is not None:
+                # 移除旧的记录（下一行会覆盖）
+                try:
+                    self.reminder_schedule.remove(self._page_aid)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        self._page_aid = tk.after(interval, self.canvas_roll)
         self.reminder_schedule.append(self._page_aid)
 
-    def roll_title(self):
-        """
-        更新窗口标题的滚动显示；使用 `_title_aid` 跟踪定时器 id 以便取消。
-        """
-        # 取消上一次的定时器（如果存在）
-        if getattr(self, "_title_aid", None) is not None:
-            try:
-                tk.after_cancel(self._title_aid)
-                self.reminder_schedule.remove(self._title_aid)
-            except Exception:
-                pass
+    def ui_pack(self):
+        self.ui_title.place_forget()
+        self.ui_debuginfo.place_forget()
+        self.mask_left.place_forget()
+        self.mask_right.place_forget()
 
-        fmt = f"%H:%M:%S {VERSION}"
-        self.ui_title.config(text=time.strftime(fmt, time.localtime(time.time())))
-        self._title_aid = tk.after(900, self.roll_title)
-        self.reminder_schedule.append(self._title_aid)
+        self.mask_left.place(x=0, y=0, relheight=1)
+        self.mask_right.place(x=tk.winfo_screenwidth() - 17, y=0, relheight=1)
+        self.ui_debuginfo.place(x=10, y=tk.winfo_screenheight() - 20)
+        if not homeworkfunc.uri_classisland("homeworkmode-on"):
+            self.ui_title.place(x=10, y=5)
 
     def load_ui(self):
         tk.title("作业管理器")
@@ -331,16 +376,15 @@ class HomeworkTool:
         self.POSITION_TOP_ADD_X = tk.winfo_screenwidth() - 167
         self.POSITION_TOP_CLEAR_X = tk.winfo_screenwidth() - 223
 
+        # 左右遮罩（保留为实例变量，便于控制叠放顺序）
+        self.mask_left = Frame(tk, width=45)
+        self.mask_right = Frame(tk, width=17)
+
         self.ui_title = Label(
             tk,
+            text=f"Homework Manager - Today [VER {VERSION}]",
             fg=COLOR,
         )
-        for process in psutil.process_iter(["name"]):
-            if process.info["name"].lower() == "classisland.desktop.exe":
-                homeworkfunc.uri_classisland("homeworkmode-on")
-                break
-        else:
-            self.ui_title.place(x=10, y=5)
         self.ui_top_exit = Button(
             tk,
             text="退出",
@@ -382,11 +426,17 @@ class HomeworkTool:
         )
 
         self.ui_debuginfo = Label(tk, text="", fg=COLOR, font=("JetBrains Mono", 7))
-        self.ui_debuginfo.place(x=10, y=tk.winfo_screenheight() - 20)
+        # 创建用于显示作业列表的 Canvas（替代多个 Label）
+        self.list_canvas = Canvas(tk, bg="#23272E", highlightthickness=0)
+        try:
+            canvas_width = self.POSITION_TIME_DISPLAY_X - 50
+        except Exception:
+            canvas_width = 1000
+        self.list_canvas.place(x=45, y=40, width=canvas_width, height=tk.winfo_screenheight() - 80)
 
     def info(self):
         self.ui_debuginfo.config(
-            text=f"Homework Manager {VERSION} {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())} Mouse: ({self.mousex}, {self.mousey}) {mouse.is_pressed() if mouse else 'N/A'} Homeworks: {len(self.homework_list)}/{self.HOMEWORK_LIMIT} Tick: {self.tick}"
+            text=f"Homework Manager {VERSION} {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())} Mouse: ({self.mousex}, {self.mousey}) Homeworks: {len(self.homework_list)}/{self.HOMEWORK_LIMIT} Tick: {self.tick}"
         )
         tk.after(33, self.info)
 
@@ -641,8 +691,8 @@ class HomeworkTool:
             self.ui_side_delete.place_forget()
             return
 
-        self.ui_side_delete.place(x=5, y=45 + self.arg * inv)
-        self.ui_side_edit.place(x=25, y=45 + self.arg * inv)
+        self.ui_side_delete.place(x=5, y=42 + self.arg * inv)
+        self.ui_side_edit.place(x=25, y=42 + self.arg * inv)
         self.ui_side_delete.config(command=lambda: self.delete_homework(self.arg))
         self.ui_side_edit.config(command=lambda: self.edit_homework(self.arg))
 

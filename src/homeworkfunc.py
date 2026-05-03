@@ -37,7 +37,7 @@ SUBJECT_DISPLAY_NAMES = [
 
 EMPHASIZE_LEVELS = ["自动", "很低", "低", "标准", "高"]
 
-ENABLE_CLASSISLAND = True
+ENABLE_CLASSISLAND = False
 
 TIME_OUT = 300
 
@@ -193,6 +193,9 @@ def uri_classisland(uri, mode="run"):
     """
     if ENABLE_CLASSISLAND:
         subprocess.Popen(f"start classisland://app/api/automation/{mode}/{uri}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return True
+    else:
+        return False
 
 
 if __name__ == "__main__":
