@@ -6,8 +6,11 @@ try:
 except Exception:
     # 在无法导入或权限受限时降级为 None，避免程序崩溃
     mouse = None
+
+import pygetwindow
 import json
 import keyboard
+import os
 import sys
 import time
 import msvcrt
@@ -16,7 +19,7 @@ import homeworkfunc as homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.4.1.1"
+VERSION = "1.4.1.2"
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -28,7 +31,16 @@ def acquire_lock(lock_path=".\\lock\\homework.lock"):
         lock_file = open(lock_path, "w")
         msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
         return lock_file
-    except OSError:
+    except FileNotFoundError:
+        # 如果锁文件所在目录不存在，尝试创建目录后重试
+        try:
+            os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+            lock_file = open(lock_path, "w")
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+            return lock_file
+        except Exception:
+            return None
+    except PermissionError:
         return None
 
 
@@ -484,17 +496,37 @@ class HomeworkTool:
             tk, text="", font=("JetBrains Mono", 7), fg=COLOR
         )  # 用于显示 tick 计数
 
-    def info(self, homework_exceed=0):
-        homework = len(self.homework_list)
+    def info(self, window_background=0, homework_exceed=0):
+        def is_foreground():
+            return pygetwindow.getActiveWindow() and pygetwindow.getActiveWindow().title == tk.title()
+
         flash_homework = 20
+        flash_background = 100
+
+        if not is_foreground():
+            window_background += 1
+            if window_background > flash_background * 2:
+                window_background = 1
+        else:
+            window_background = 0
+
+        homework = len(self.homework_list)
         if homework > self.HOMEWORK_LIMIT:
-            homework_exceed = homework_exceed + 1
+            homework_exceed += 1
             if homework_exceed > flash_homework * 2:
                 homework_exceed = 1
         else:
             homework_exceed = 0
 
-        self.ui_info_basic.config(text=f"Homework Manager {VERSION}")
+        self.ui_info_basic.config(
+            text=(
+                f"Homework Manager {VERSION}"
+                if window_background <= flash_background
+                else f"   Background    {VERSION}"
+            ),
+            bg=("#23272E" if window_background <= flash_background else "#0000FF"),
+            fg=(COLOR if window_background <= flash_background else "#FFFFFF"),
+        )
 
         self.ui_info_time.config(
             text=f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}"
@@ -515,11 +547,11 @@ class HomeworkTool:
                 if homework_exceed == 0
                 else ("#FFFF00" if homework_exceed <= flash_homework else "#000000")
             ),
-            bg=("#FFFF00" if homework_exceed > flash_homework else "#23272E")
+            bg=("#FFFF00" if homework_exceed > flash_homework else "#23272E"),
         )
 
         self.ui_info_tick.config(text=f"Tick: {self.tick:03d}")
-        tk.after(33, lambda: self.info(homework_exceed))
+        tk.after(33, lambda: self.info(window_background, homework_exceed))
 
     def clear_homework(self):
         # 清理所有“时间已过”的作业（时间戳非0且早于当前时间10分钟以前）
@@ -629,7 +661,9 @@ class HomeworkTool:
         def submit():
             if len(self.homework_list) >= self.HOMEWORK_LIMIT:
                 new_window.attributes("-topmost", False)
-                if not messagebox.askyesno("作业管理器·超过上限", "作业数量已达上限，是否强制添加？"):
+                if not messagebox.askyesno(
+                    "作业管理器·超过上限", "作业数量已达上限，是否强制添加？"
+                ):
                     new_window.attributes("-topmost", True)
                     return
             new_subject_index = self.subject_display_names.index(subject_var.get())

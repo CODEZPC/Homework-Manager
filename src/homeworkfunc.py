@@ -2,6 +2,9 @@ import time
 import json
 import subprocess
 import warnings
+import os
+import sys
+import shutil
 from tkinter import *
 import tkinter.font as tkfont
 
@@ -38,6 +41,10 @@ SUBJECT_DISPLAY_NAMES = [
 EMPHASIZE_LEVELS = ["自动", "很低", "低", "标准", "高"]
 
 ENABLE_CLASSISLAND = False
+
+# 如果通过 PyInstaller 等打包为 exe，则自动启用 ClassIsland 调用
+if getattr(sys, "frozen", False):
+    ENABLE_CLASSISLAND = True
 
 TIME_OUT = 300
 
@@ -94,60 +101,6 @@ def analyze_time(timestamp, emphasize="自动"):
         return (f"下周{we[int(w)]}{t}收", 0 if auto else emphasize_prefix(emphasize))
     else:
         return (f"{time.strftime('%Y/%m/%d', time.localtime(timestamp))}收", 0)
-
-
-def charater_count(string, limit=70):
-    """
-    计算字符串在指定长度限制下的分页情况。(已废弃，请使用 split_sentence 替代)
-    """
-    warnings.warn(
-        "函数 charater_count 已废弃，请使用 split_sentence 替代", DeprecationWarning
-    )
-    count = 0
-    start = 0
-    page = []
-    eng = "~!@#$%^&*()_+`1234567890-={}|[]\\:\"';<>?,./QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm "
-    for i, j in enumerate(string):
-        if j in eng:
-            count += 1
-        else:
-            count += 1.666667
-        if limit <= count <= limit + 1 and i <= len(string) - 1:
-            if string[i + 1] not in eng:
-                page.append(string[start : i + 1])
-                start = i + 1
-                count = 0
-        elif limit <= count <= limit + 1 and i == len(string) - 1:
-            page.append(string[start : i + 1])
-            start = i + 1
-            count = 0
-        elif count >= limit + 1:
-            page.append(string[start : i + 1])
-            start = i + 1
-            count = 0
-    page.append(string[start:])
-    if page[-1] == "":
-        page.pop()
-    return page
-
-
-def split_sentence(string, limit, tki):
-    now = 0
-    start = 0
-    page = []
-    object = Label(tki, text=string[start : now + 1], font=("JetBrains Mono", 18))
-    while now < len(string):
-        object.config(text=string[start : now + 1])
-        if getwidth(object, tki) > limit:
-            while getwidth(object, tki) > limit:
-                now -= 1
-                object.config(text=string[start : now + 1])
-            page.append(string[start : now + 1])
-            start = now + 1
-        now += 10 if now + 10 < len(string) else 1
-    if len(string) > start:
-        page.append(string[start:])
-    return page
 
 
 def getwidth(object, tki):

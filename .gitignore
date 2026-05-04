@@ -8,3 +8,4 @@ main.exe
 homework.json
 homework_stress.json
 /src/__pycache__
+/lock
