@@ -37,7 +37,7 @@ SUBJECT_DISPLAY_NAMES = [
 
 EMPHASIZE_LEVELS = ["自动", "很低", "低", "标准", "高"]
 
-ENABLE_CLASSISLAND = True
+ENABLE_CLASSISLAND = False
 
 TIME_OUT = 300
 

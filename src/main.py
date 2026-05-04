@@ -486,9 +486,8 @@ class HomeworkTool:
 
     def info(self, homework_exceed=0):
         homework = len(self.homework_list)
-        flash_homework = 1e8
+        flash_homework = 20
         if homework > self.HOMEWORK_LIMIT:
-            flash_homework = max(5, (self.HOMEWORK_LIMIT * 2 - homework) // 3)
             homework_exceed = homework_exceed + 1
             if homework_exceed > flash_homework * 2:
                 homework_exceed = 1
