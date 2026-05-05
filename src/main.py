@@ -21,7 +21,7 @@ import msvcrt
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.5.0"
+VERSION = "1.5.1"
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -614,8 +614,6 @@ class HomeworkTool:
             + 10,
             y=tk.winfo_screenheight() - 20,
         )
-        if not func.uri_classisland("homeworkmode-on"):
-            self.ui_title.place(x=10, y=5)
 
     def load_ui(self):
         tk.title("作业管理器")
@@ -704,6 +702,9 @@ class HomeworkTool:
         self.ui_info_tick = Label(
             tk, text="", font=("JetBrains Mono", 7), fg=COLOR
         )  # 用于显示 tick 计数
+
+        if not func.uri_classisland("homeworkmode-on"):
+            self.ui_title.place(x=10, y=5)
 
     def info(self, flash_tick=0):
 
