@@ -11,6 +11,7 @@ import pygetwindow
 import json
 import keyboard
 import os
+import psutil
 import sys
 import time
 import msvcrt
@@ -19,7 +20,7 @@ import homeworkfunc as homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.4.1.2"
+VERSION = "1.4.2"
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -71,6 +72,8 @@ class HomeworkTool:
         self._upload_aid = None
 
         self.mousex, self.mousey = 0, 0
+        self.load_amount = 0  # 负载量
+        self._last_frame_time = None
 
         # 校验资源完整性
         homeworkfunc.resource_check(self.subject_codes)
@@ -85,7 +88,7 @@ class HomeworkTool:
         self.tick = 0
         tk.after(1, self.on_tick)
         self.info()
-        self.ui_pack()
+        tk.after(100, self.ui_pack)
 
     def on_tick(self):
         """
@@ -337,6 +340,13 @@ class HomeworkTool:
         interval = getattr(self, "_page_interval", 33)
         left_bound = 45
 
+        # 计算两帧之间时间间隔（用于估算 FPS）
+        now = time.perf_counter()
+        frame_dt = None
+        if getattr(self, "_last_frame_time", None) is not None:
+            frame_dt = now - self._last_frame_time
+        self._last_frame_time = now
+
         # 对每个需要滚动的 canvas 项目移动（使用 canvas 内坐标）
         canvas_left = self.list_canvas.winfo_x()
         left_bound_canvas = left_bound - canvas_left
@@ -357,6 +367,11 @@ class HomeworkTool:
                     self.list_canvas.move(item, shift, 0)
             else:
                 self.list_canvas.move(item, -dx, 0)
+        # 在计划下一帧之前更新负载量显示
+        try:
+            self.calculate_canvas_load(frame_dt, dx)
+        except Exception:
+            pass
 
         # 计划下一帧
         try:
@@ -371,12 +386,53 @@ class HomeworkTool:
         self._page_aid = tk.after(interval, self.canvas_roll)
         self.reminder_schedule.append(self._page_aid)
 
+    def calculate_canvas_load(self, frame_dt=None, dx=2):
+        """
+        估算 Canvas 渲染负载并更新 `self.load_amount` 与 `ui_info_load` 显示。
+
+        负载由以下部分组成：项数、正在滚动的项数、每秒移动像素与文本总像素宽度。
+        同时尽可能纳入进程的 CPU 与内存占用作为参考。
+        """
+        items = getattr(self, "canvas_items", []) or []
+        count_items = len(items)
+        rolling_count = sum(1 for i in getattr(self, "need_roll", []) if i)
+        total_text_pixels = sum(getattr(self, "canvas_widths", []) or [0])
+
+        # 估算 FPS
+        if frame_dt and frame_dt > 0:
+            fps = 1.0 / frame_dt
+        else:
+            fps = 1000.0 / float(getattr(self, "_page_interval", 33))
+
+        pixels_per_second = dx * fps * max(1, rolling_count)
+
+        # 加权组合（可按需调整权重/系数）
+        load = int(
+            count_items * 1
+            + rolling_count * 6
+            + pixels_per_second / 500.0
+            + total_text_pixels / 2000.0
+        )
+
+        # 尝试加入 CPU / 内存指标
+        try:
+            p = psutil.Process(os.getpid())
+            mem_mb = p.memory_info().rss / 1024.0 / 1024.0
+            cpu = p.cpu_percent(interval=None)
+            load += int(cpu / 2 + mem_mb / 10)
+        except Exception:
+            pass
+
+        # 限制为非负整数
+        self.load_amount = max(0, int(load))
+
     def ui_pack(self):
         self.ui_title.place_forget()
         self.ui_info_basic.place_forget()
         self.ui_info_time.place_forget()
-        self.ui_info_mouse.place_forget()
         self.ui_info_homework.place_forget()
+        self.ui_info_load.place_forget()
+        self.ui_info_mouse.place_forget()
         self.ui_info_tick.place_forget()
         self.mask_left.place_forget()
         self.mask_right.place_forget()
@@ -384,15 +440,9 @@ class HomeworkTool:
         self.mask_left.place(x=0, y=0, relheight=1)
         self.mask_right.place(x=tk.winfo_screenwidth() - 17, y=0, relheight=1)
         self.ui_info_basic.place(x=10, y=tk.winfo_screenheight() - 20)
-        self.ui_info_mouse.place(
+        self.ui_info_time.place(
             x=homeworkfunc.getwidth(self.ui_info_basic, tk)
             + self.ui_info_basic.winfo_x()
-            + 10,
-            y=tk.winfo_screenheight() - 20,
-        )
-        self.ui_info_time.place(
-            x=homeworkfunc.getwidth(self.ui_info_mouse, tk)
-            + self.ui_info_mouse.winfo_x()
             + 10,
             y=tk.winfo_screenheight() - 20,
         )
@@ -402,9 +452,21 @@ class HomeworkTool:
             + 10,
             y=tk.winfo_screenheight() - 20,
         )
-        self.ui_info_tick.place(
+        self.ui_info_load.place(
             x=homeworkfunc.getwidth(self.ui_info_homework, tk)
             + self.ui_info_homework.winfo_x()
+            + 10,
+            y=tk.winfo_screenheight() - 20,
+        )
+        self.ui_info_mouse.place(
+            x=homeworkfunc.getwidth(self.ui_info_load, tk)
+            + self.ui_info_load.winfo_x()
+            + 10,
+            y=tk.winfo_screenheight() - 20,
+        )
+        self.ui_info_tick.place(
+            x=homeworkfunc.getwidth(self.ui_info_mouse, tk)
+            + self.ui_info_mouse.winfo_x()
             + 10,
             y=tk.winfo_screenheight() - 20,
         )
@@ -486,50 +548,110 @@ class HomeworkTool:
         self.ui_info_time = Label(
             tk, text="", font=("JetBrains Mono", 7), fg=COLOR
         )  # 用于显示时间状态
-        self.ui_info_mouse = Label(
-            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
-        )  # 用于显示鼠标位置
         self.ui_info_homework = Label(
             tk, text="", font=("JetBrains Mono", 7), fg=COLOR
         )  # 用于显示作业数量
+        self.ui_info_load = Label(
+            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+        )  # 用于显示负载
+        self.ui_info_mouse = Label(
+            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+        )  # 用于显示鼠标位置
         self.ui_info_tick = Label(
             tk, text="", font=("JetBrains Mono", 7), fg=COLOR
         )  # 用于显示 tick 计数
 
-    def info(self, window_background=0, homework_exceed=0):
+    def info(self, flash_tick=0):
+
+        # 预处理与计时
         def is_foreground():
-            return pygetwindow.getActiveWindow() and pygetwindow.getActiveWindow().title == tk.title()
+            return (
+                pygetwindow.getActiveWindow()
+                and pygetwindow.getActiveWindow().title == tk.title()
+            )
 
         flash_homework = 20
-        flash_background = 100
+        flash_load = 20
+        flash_background = 80
 
-        if not is_foreground():
-            window_background += 1
-            if window_background > flash_background * 2:
-                window_background = 1
+        flash_tick += 1
+        if flash_tick > 20000:
+            flash_tick = 0
+
+        # 解析当前显示内容
+
+        if not is_foreground() and flash_tick // flash_background % 2 != 0:
+            text_basic = f"   Background    {VERSION}"
+            color_fg_basic = "#FFFFFF"
+            color_bg_basic = "#0000FF"
         else:
-            window_background = 0
+            # COMMON
+            text_basic = f"Homework Manager {VERSION}"
+            color_fg_basic = COLOR
+            color_bg_basic = "#23272E"
 
         homework = len(self.homework_list)
-        if homework > self.HOMEWORK_LIMIT:
-            homework_exceed += 1
-            if homework_exceed > flash_homework * 2:
-                homework_exceed = 1
+        text_homework = f"Homeworks: {homework:02d}/{self.HOMEWORK_LIMIT:02d}"
+        if homework > self.HOMEWORK_LIMIT + 5:
+            if flash_tick // flash_homework % 2 != 0:
+                color_fg_homework = "#FFFFFF"
+                color_bg_homework = "#FF0000"
+            else:
+                color_fg_homework = "#FF0000"
+                color_bg_homework = "#23272E"
+        elif homework > self.HOMEWORK_LIMIT:
+            if flash_tick // flash_homework % 2 != 0:
+                color_fg_homework = "#000000"
+                color_bg_homework = "#FFFF00"
+            else:
+                color_fg_homework = "#FFFF00"
+                color_bg_homework = "#23272E"
         else:
-            homework_exceed = 0
+            # COMMON
+            color_fg_homework = COLOR
+            color_bg_homework = "#23272E"
+        
+        text_load = f"Loads: {self.load_amount}"
+        if self.load_amount > 200:
+            if flash_tick // flash_load % 2 != 0:
+                color_fg_load = "#FFFFFF"
+                color_bg_load = "#FF0000"
+            else:
+                color_fg_load = "#FF0000"
+                color_bg_load = "#23272E"
+        elif self.load_amount > 100:
+            if flash_tick // flash_load % 2 != 0:
+                color_fg_load = "#000000"
+                color_bg_load = "#FFFF00"
+            else:
+                color_fg_load = "#FFFF00"
+                color_bg_load = "#23272E"
+        else:
+            color_fg_load = COLOR
+            color_bg_load = "#23272E"
+
+        # 更新UI
 
         self.ui_info_basic.config(
-            text=(
-                f"Homework Manager {VERSION}"
-                if window_background <= flash_background
-                else f"   Background    {VERSION}"
-            ),
-            bg=("#23272E" if window_background <= flash_background else "#0000FF"),
-            fg=(COLOR if window_background <= flash_background else "#FFFFFF"),
+            text=text_basic,
+            bg=color_bg_basic,
+            fg=color_fg_basic,
         )
 
         self.ui_info_time.config(
             text=f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}"
+        )
+
+        self.ui_info_homework.config(
+            text=text_homework,
+            bg=color_bg_homework,
+            fg=color_fg_homework,
+        )
+
+        self.ui_info_load.config(
+            text=text_load,
+            bg=color_bg_load,
+            fg=color_fg_load,
         )
 
         if mouse:
@@ -540,21 +662,12 @@ class HomeworkTool:
         else:
             self.ui_info_mouse.config(text="Mouse: (====N/A====)", fg="#FFFF00")
 
-        self.ui_info_homework.config(
-            text=f"Homeworks: {f"{homework:02d}" if homework <= self.HOMEWORK_LIMIT + 5 else "-+"}/{self.HOMEWORK_LIMIT:02d}",
-            fg=(
-                COLOR
-                if homework_exceed == 0
-                else ("#FFFF00" if homework_exceed <= flash_homework else "#000000")
-            ),
-            bg=("#FFFF00" if homework_exceed > flash_homework else "#23272E"),
-        )
-
         self.ui_info_tick.config(text=f"Tick: {self.tick:03d}")
-        tk.after(33, lambda: self.info(window_background, homework_exceed))
+
+        tk.after(33, lambda: self.info(flash_tick))
 
     def clear_homework(self):
-        # 清理所有“时间已过”的作业（时间戳非0且早于当前时间10分钟以前）
+        # 清理所有“时间已过”的作业（时间戳非0且早于当前时间一定时间以前）
         removed = 0
         try:
             for key in self.subject_codes:
@@ -567,7 +680,7 @@ class HomeworkTool:
                             t = float(item.get("time", 0))
                         except Exception:
                             t = 0
-                    # 时间为0表示不收，跳过；过期规则：比当前时间早超过10分钟视为已过
+                    # 时间为0表示不收，跳过；过期规则：比当前时间早超过一定时间视为已过
                     if t != 0 and t < time.time() - homeworkfunc.TIME_OUT:
                         removed += 1
                     else:
@@ -659,7 +772,7 @@ class HomeworkTool:
         )
 
         def submit():
-            if len(self.homework_list) >= self.HOMEWORK_LIMIT:
+            if len(self.homework_list) >= self.HOMEWORK_LIMIT and not replace_target:
                 new_window.attributes("-topmost", False)
                 if not messagebox.askyesno(
                     "作业管理器·超过上限", "作业数量已达上限，是否强制添加？"
