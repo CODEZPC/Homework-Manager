@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import messagebox
+import tkinter.font as tkfont
 
 try:
     import mouse
@@ -12,15 +13,16 @@ import json
 import keyboard
 import os
 import psutil
+import subprocess
 import sys
 import time
 import msvcrt
-import homeworkfunc as homeworkfunc
+# import homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.4.2"
+VERSION = "1.5.0"
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -44,6 +46,149 @@ def acquire_lock(lock_path=".\\lock\\homework.lock"):
     except PermissionError:
         return None
 
+class HomeworkFunc:
+    def __init__(self):
+        self.SUBJECT_CODES = [
+            "C",
+            "M",
+            "E",
+            "P1",
+            "H1",
+            "G1",
+            "PH1",
+            "PH2",
+            "CH1",
+            "CH2",
+            "B1",
+            "OTH",
+        ]
+
+        self.SUBJECT_DISPLAY_NAMES = [
+            "语文 ",
+            "数学 ",
+            "英语 ",
+            "政治 D1",
+            "历史 D1",
+            "地理 D1",
+            "物理 D1",
+            "物理 D2",
+            "化学 D1",
+            "化学 D2",
+            "生物 D1",
+            "其他",
+        ]
+
+        self.EMPHASIZE_LEVELS = ["自动", "很低", "低", "标准", "高"]
+
+        self.ENABLE_CLASSISLAND = False
+
+        # 如果通过 PyInstaller 等打包为 exe，则自动启用 ClassIsland 调用
+        if getattr(sys, "frozen", False):
+            self.ENABLE_CLASSISLAND = True
+
+        self.TIME_OUT = 300
+
+
+    def analyze_time(self, timestamp, emphasize="自动"):
+        """
+        计算目标时间与当前时间的关系，返回一个字符串表示目标时间的状态。
+        """
+        def emphasize_prefix(level):
+            if level == "自动":
+                return 1
+            elif level == "很低":
+                return -1
+            elif level == "低":
+                return 0
+            elif level == "标准":
+                return 1
+            elif level == "高":
+                return 3
+
+        if isinstance(timestamp, str):
+            return (timestamp, emphasize_prefix(emphasize))
+        we = ["日", "一", "二", "三", "四", "五", "六"]
+        time_day_start = time.mktime(
+            time.strptime(
+                time.strftime("%Y-%m-%d", time.localtime(time.time())) + " 00:00:00",
+                "%Y-%m-%d %H:%M:%S",
+            )
+        )
+        time_now = time.time()
+        week_now = time.strftime("%w", time.localtime(time_now))
+        t = time.strftime("%H:%M", time.localtime(timestamp))
+        w = time.strftime("%w", time.localtime(timestamp))
+        auto = emphasize == "自动"
+        if timestamp == 0:
+            return ("暂时不收", 0 if auto else emphasize_prefix(emphasize))
+        elif timestamp < time.time() - self.TIME_OUT:
+            return ("时间已过", -1)
+        elif timestamp < time.time() - 60:
+            return ("现在收", 3)
+        elif timestamp < time.time():
+            return ("现在收", 4)
+        elif timestamp < time.time() + self.TIME_OUT:
+            return ("即将收", 1 if auto else emphasize_prefix(emphasize))
+        elif timestamp < time_day_start + 86400:
+            return (f"{t}收", 1 if auto else emphasize_prefix(emphasize))
+        elif timestamp < time_day_start + 86400 * 2:
+            return (f"明天{t}收", 1 if auto else emphasize_prefix(emphasize))
+        elif timestamp < time_day_start + 86400 * 3:
+            return (f"后天{t}收", 0 if auto else emphasize_prefix(emphasize))
+        elif timestamp < time_day_start + 86400 * (8 - int(week_now)):
+            return (f"周{we[int(w)]}{t}收", 0 if auto else emphasize_prefix(emphasize))
+        elif timestamp < time_day_start + 86400 * (15 - int(week_now)):
+            return (f"下周{we[int(w)]}{t}收", 0 if auto else emphasize_prefix(emphasize))
+        else:
+            return (f"{time.strftime('%Y/%m/%d', time.localtime(timestamp))}收", 0)
+
+
+    def getwidth(self, object, tki):
+        """
+        返回给定控件文本的像素宽度（调用前请确保已有 `tki` 根）。
+        优先通过控件的 `text` 与 `font` 来计算像素宽度，保证返回的是像素值而不是字符数。
+        如果控件不包含文本（或无法读取），则回退到 `winfo_width()`。
+        """
+        tki.update_idletasks()
+        try:
+            text = object.cget("text")
+        except Exception:
+            return object.winfo_width()
+        try:
+            font_name = object.cget("font")
+            font = tkfont.Font(root=tki, font=font_name)
+        except Exception:
+            font = tkfont.Font(root=tki)
+        return font.measure(text)
+
+
+    def resource_check(self, subject_codes):
+        """
+        检查资源是否存在，如不存在则修复
+        """
+        try:
+            with open("homework.json", "r", encoding="utf-8") as f:
+                pass
+        except FileNotFoundError:
+            with open("homework.json", "w", encoding="utf-8") as f:
+                data = {}
+                for code in subject_codes:
+                    data[code] = []
+                json.dump(data, f, ensure_ascii=False, indent=4)
+
+
+    def uri_classisland(self, uri, mode="run"):
+        """
+        调用 ClassIsland 的 URI 解析接口
+
+        :param uri: 要解析的 URI 字符串
+        :param mode: 解析模式，默认为 "run"，表示直接运行解析结果 -> ["run", "revert"]
+        """
+        if self.ENABLE_CLASSISLAND:
+            subprocess.Popen(f"start classisland://app/api/automation/{mode}/{uri}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            return True
+        else:
+            return False
 
 class HomeworkTool:
     def __init__(self):
@@ -60,9 +205,9 @@ class HomeworkTool:
         self.homework_widths = []  # 作业UI宽度（用于滚动显示）
         self.need_roll = []  # 需要滚动显示的作业索引
         self.new_position = []
-        self.subject_codes = homeworkfunc.SUBJECT_CODES
-        self.subject_display_names = homeworkfunc.SUBJECT_DISPLAY_NAMES
-        self.emphasize_levels = homeworkfunc.EMPHASIZE_LEVELS
+        self.subject_codes = func.SUBJECT_CODES
+        self.subject_display_names = func.SUBJECT_DISPLAY_NAMES
+        self.emphasize_levels = func.EMPHASIZE_LEVELS
         self.reminder_schedule = []  # 计划的tk.after
         for self.HOMEWORK_LIMIT in range(1000):
             if self.HOMEWORK_LIMIT * 30 + 40 >= tk.winfo_screenheight() - 40:
@@ -76,7 +221,7 @@ class HomeworkTool:
         self._last_frame_time = None
 
         # 校验资源完整性
-        homeworkfunc.resource_check(self.subject_codes)
+        func.resource_check(self.subject_codes)
 
         # 显示
         self.draw_homework()
@@ -213,7 +358,7 @@ class HomeworkTool:
             a.config(text=f"正在加载 - {self.subject_display_names[i]}...")
             for k in self.data[subj]:
                 content = self.subject_display_names[i] + ":" + k["content"]
-                status = homeworkfunc.analyze_time(k["time"], k["emphasize"])[1]
+                status = func.analyze_time(k["time"], k["emphasize"])[1]
                 all_items.append((content, status))
             if keyboard.is_pressed("tab"):
                 time.sleep(0.6)
@@ -286,7 +431,7 @@ class HomeworkTool:
         upload = 0
         for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
-                time_status = homeworkfunc.analyze_time(k["time"], k["emphasize"])
+                time_status = func.analyze_time(k["time"], k["emphasize"])
                 self.time_list.append(
                     Label(
                         tk,
@@ -322,7 +467,7 @@ class HomeworkTool:
             widget.place(x=self.POSITION_TIME_DISPLAY_X, y=40 + idx * inv)
 
         if upload:
-            homeworkfunc.uri_classisland("Homeworkmode-upload")
+            func.uri_classisland("Homeworkmode-upload")
 
         now = time.localtime()
         remaining_seconds = 60 - now.tm_sec
@@ -441,36 +586,36 @@ class HomeworkTool:
         self.mask_right.place(x=tk.winfo_screenwidth() - 17, y=0, relheight=1)
         self.ui_info_basic.place(x=10, y=tk.winfo_screenheight() - 20)
         self.ui_info_time.place(
-            x=homeworkfunc.getwidth(self.ui_info_basic, tk)
+            x=func.getwidth(self.ui_info_basic, tk)
             + self.ui_info_basic.winfo_x()
             + 10,
             y=tk.winfo_screenheight() - 20,
         )
         self.ui_info_homework.place(
-            x=homeworkfunc.getwidth(self.ui_info_time, tk)
+            x=func.getwidth(self.ui_info_time, tk)
             + self.ui_info_time.winfo_x()
             + 10,
             y=tk.winfo_screenheight() - 20,
         )
         self.ui_info_load.place(
-            x=homeworkfunc.getwidth(self.ui_info_homework, tk)
+            x=func.getwidth(self.ui_info_homework, tk)
             + self.ui_info_homework.winfo_x()
             + 10,
             y=tk.winfo_screenheight() - 20,
         )
         self.ui_info_mouse.place(
-            x=homeworkfunc.getwidth(self.ui_info_load, tk)
+            x=func.getwidth(self.ui_info_load, tk)
             + self.ui_info_load.winfo_x()
             + 10,
             y=tk.winfo_screenheight() - 20,
         )
         self.ui_info_tick.place(
-            x=homeworkfunc.getwidth(self.ui_info_mouse, tk)
+            x=func.getwidth(self.ui_info_mouse, tk)
             + self.ui_info_mouse.winfo_x()
             + 10,
             y=tk.winfo_screenheight() - 20,
         )
-        if not homeworkfunc.uri_classisland("homeworkmode-on"):
+        if not func.uri_classisland("homeworkmode-on"):
             self.ui_title.place(x=10, y=5)
 
     def load_ui(self):
@@ -681,7 +826,7 @@ class HomeworkTool:
                         except Exception:
                             t = 0
                     # 时间为0表示不收，跳过；过期规则：比当前时间早超过一定时间视为已过
-                    if t != 0 and t < time.time() - homeworkfunc.TIME_OUT:
+                    if t != 0 and t < time.time() - func.TIME_OUT:
                         removed += 1
                     else:
                         new_list.append(item)
@@ -927,7 +1072,7 @@ class HomeworkTool:
         self.ui_side_edit.config(command=lambda: self.edit_homework(self.arg))
 
     def exit(self):
-        homeworkfunc.uri_classisland("homeworkmode-off")
+        func.uri_classisland("homeworkmode-off")
         sys.exit(0)
 
 
@@ -945,7 +1090,8 @@ def main():
         sys.exit(0)
 
     # 创建全局 tk（保持与原代码兼容）并启动应用
-    global tk
+    global tk, func
+    func = HomeworkFunc()
     tk = Tk()
     app = HomeworkTool()
     tk.mainloop()
