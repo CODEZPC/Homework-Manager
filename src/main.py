@@ -17,7 +17,6 @@ import subprocess
 import sys
 import time
 import msvcrt
-# import homeworkfunc
 
 COLOR = "#767F89"
 DEBUG = False
