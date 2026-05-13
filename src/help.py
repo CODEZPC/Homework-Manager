@@ -7,19 +7,17 @@ window_height = tk.winfo_screenheight()
 CONFIG = [
     {"概述": "作业管理器·使用手册\n选择左侧选项以查看详细信息"},
     {
-        "OPTION 1": [
-            "BASE",
-            {"SUBOPTION 1": "Description for SUBOPTION 1"},
-            {
-                "SUBOPTION 2": [
-                    "Description for SUBOPTION 2",
-                    {"SUBSUBOPTION 1": "Description for SUBSUBOPTION 1"},
-                ]
-            },
-            {"SUBOPTION 3": "Description for SUBOPTION 3"},
+        "添加与修改": [
+            "添加：单击顶部【添加】以进入\n修改：单击项目左侧【E】以进入",
+            {"内容与长度": "……"},
         ]
     },
-    {"OPTION 2": "Description for OPTION 2"},
+    {"删除与清空": "……"},
+    {"存储与数据版本": "……"},
+    {"Tick 行为": "……"},
+    {"Classisland 对接": "……"},
+    {"鼠标与防屏保": "……"},
+    {"负载": "……"},
 ]
 
 
@@ -46,7 +44,7 @@ class Help:
             selectbackground="#7289DA",
             selectmode=SINGLE,
         )
-        self.content.place(x=0, y=0, relheight=1, relwidth=0.15)
+        self.content.place(x=0, y=0, relheight=1, relwidth=0.18)
         self.detail = Label(
             tk,
             highlightthickness=0,
@@ -54,10 +52,10 @@ class Help:
             relief=RIDGE,
             anchor="nw",
             justify=LEFT,
-            wraplength=window_width * 0.8 * 0.85,
+            wraplength=window_width * 0.8 * 0.82,
         )
         self.detail.place(
-            x=int(window_width * 0.8 * 0.15), y=0, relheight=1, relwidth=0.85
+            x=int(window_width * 0.8 * 0.18), y=0, relheight=1, relwidth=0.82
         )
 
         # build a tree representation from CONFIG
@@ -95,7 +93,11 @@ class Help:
                         for k, v in elem.items():
                             process_item(k, v, parent=name)
                             children.append(k)
-                self.nodes[name] = {"desc": base, "children": children, "parent": parent}
+                self.nodes[name] = {
+                    "desc": base,
+                    "children": children,
+                    "parent": parent,
+                }
             elif isinstance(val, dict):
                 children = []
                 for k, v in val.items():
