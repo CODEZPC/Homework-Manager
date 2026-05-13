@@ -1,33 +1,61 @@
 from tkinter import *
 
-tk = Tk()
-window_width = tk.winfo_screenwidth()
-window_height = tk.winfo_screenheight()
+VERSION = "1.5.2"
 
 CONFIG = [
-    {"概述": "作业管理器·使用手册\n选择左侧选项以查看详细信息"},
+    {
+        "概述": f"作业管理器·使用手册 V{VERSION}\n选择左侧选项以查看详细信息。\n\n也可在作业添加/修改面板中再次打开本手册。",
+    },
     {
         "添加与修改": [
-            "添加：单击顶部【添加】以进入\n修改：单击项目左侧【E】以进入",
-            {"内容与长度": "……"},
+            "作业添加与修改\n\n作业添加/修改面板可通过如下方式打开：\n\n添加：单击顶部按钮【添加】以进入。\n修改：单击项目左侧【E】以进入。\n\n作业添加/修改面板包括以下部分：\n\n作业科目：可选择的科目列表，包含语文、数学、英语、政治、历史、地理、物理D1、物理D2、化学D1、化学D2、生物D1、其他。\n内容：详见 内容与显示。\n时间：详见 时间与自定义信息。\n优先级：详见 优先级与显示。\n\n在添加/修改面板中，输入完成后单击【保存】以保存作业信息并返回主界面，单击【取消】以放弃修改并返回主界面。",
+            {
+                "内容与显示": "作业内容与显示\n\n作业内容输入框允许单行文本输入，内容将直接显示在主界面作业列表中，短内容将以静态显示，若内容超过显示区域宽度，将变为滚动显示，但同时带来更多负载，详见 负载。",
+            },
+            {
+                "时间与自定义信息": "作业时间与自定义信息\n\n时间与自定义信息共用输入框，一次仅能展示一项。\n输入框允许输入作业截止时间，格式为 YYYY-MM-DD HH:MM，输入完成后会自动转换为相对时间显示在主界面作业列表中，输入0将自动解析为暂时不收。\n同时，允许输入任意文本内容，内容将直接显示在主界面作业列表中，适合用于输入一些额外的说明或备注信息。\n\n当输入内容无法解析为有效时间时，将默认视为自定义信息进行显示。\n\n显示样例如下（默认情况下，超时时间是5分钟）：\n当前时间在设置时间的超时时间之后 -> 时间已过\n当前时间在设置时间之后，在设置时间的超时时间之前 -> 现在收\n当前时间在设置时间之前，但剩余时间小于超时时间 -> 即将收\n当前时间在设置时间之前，且时间在今天 -> HH:MM收\n当前时间在设置时间之前，且时间在明天 -> 明天HH:MM收\n当前时间在设置时间之前，且时间在后天 -> 后天HH:MM收\n当前时间在设置时间之前，且时间在本周内 -> 周XHH:MM收\n当前时间在设置时间之前，且时间在下周内 -> 下周XHH:MM收\n当前时间在设置时间之前，且时间在下周外 -> YYYY/MM/DD收\n",
+            },
+            {
+                "优先级与显示": "……",
+            },
+            {
+                "作业显示顺序": "……",
+            }
         ]
     },
-    {"删除与清空": "……"},
-    {"存储与数据版本": "……"},
-    {"Tick 行为": "……"},
-    {"Classisland 对接": "……"},
-    {"鼠标与防屏保": "……"},
-    {"负载": "……"},
+    {
+        "删除与清空": "……",
+    },
+    {
+        "存储与数据版本": "……",
+    },
+    {
+        "Tick 行为": "……",
+    },
+    {
+        "Classisland 对接": "……",
+    },
+    {
+        "鼠标与防屏保": "……",
+    },
+    {
+        "负载": "……",
+    },
 ]
 
 
 class Help:
     def __init__(self):
+        global tk, window_width, window_height
+        tk = Tk()
+        window_width = tk.winfo_screenwidth()
+        window_height = tk.winfo_screenheight()
         tk.title("作业管理器·使用手册")
         tk.geometry(
             f"{int(window_width * 0.8)}x{int(window_height * 0.8)}+{int(window_width * 0.1)}+{int(window_height * 0.1)}"
         )
         tk.resizable(False, False)
+        tk.attributes("-topmost", True)
 
         tk.config(bg="#23272E")
         tk.option_add("*Background", "#23272E")
@@ -71,6 +99,20 @@ class Help:
 
         # initial render: only top-level entries
         self.rebuild_list(self.expanded_path)
+
+        # 默认选中并显示 CONFIG 第一项（如果存在）
+        if self.roots:
+            self.expanded_path = [self.roots[0]]
+            self._suspend_events = True
+            self.rebuild_list(self.expanded_path)
+            if self.display_paths:
+                self.content.selection_set(0)
+                self.content.activate(0)
+                self.content.see(0)
+                name = self.display_paths[0][-1]
+                desc = self.nodes.get(name, {}).get("desc", "")
+                self.detail.config(text=desc)
+            self._suspend_events = False
 
     def _parse_config(self):
         self.nodes = {}

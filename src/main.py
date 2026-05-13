@@ -17,11 +17,12 @@ import subprocess
 import sys
 import time
 import msvcrt
+import help
 
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.5.1"
+VERSION = "1.5.2"
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -976,17 +977,7 @@ class HomeworkTool:
             new_window.destroy()
 
         def show_help():
-            help_window = Toplevel(tk)
-            help_window.title("作业管理器·帮助")
-            help_window.config(bg="#23272E")
-            help_window.resizable(False, False)
-            help_window.attributes("-topmost", True)
-
-            Label(
-                help_window,
-                text="""截止时间格式：YYYY/MM/DD HH:MM\n0或留空代表暂时不收\n或者输入任意字符以自定义信息\n\n通常地，在优先级为自动的情况下，\n2天内收的作业按“标准”显示，\n在2天以上按“低”显示，\n目前收取按“高”显示，\n时间已过按“很低”显示，\n自定义信息默认按“标准”显示\n\n也可以自定义优先级，\n在时间已过/现在收的显示不受影响""",
-                font=("Jetbrains Mono", 14),
-            ).grid(row=1, column=1, padx=20, pady=20)
+            helper = help.Help()
 
         Button(new_window, text="提交", command=submit, relief=FLAT).grid(
             row=5, column=2, sticky="e"
@@ -1092,6 +1083,7 @@ def main():
     # 创建全局 tk（保持与原代码兼容）并启动应用
     global tk, func
     func = HomeworkFunc()
+    helper = help.Help()
     tk = Tk()
     app = HomeworkTool()
     tk.mainloop()
