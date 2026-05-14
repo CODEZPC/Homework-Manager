@@ -60,7 +60,7 @@ class Help:
         tk.config(bg="#23272E")
         tk.option_add("*Background", "#23272E")
         tk.option_add("*Foreground", "#C8C8C8")
-        tk.option_add("*Font", ("JetBrains Mono", 12))
+        tk.option_add("*Font", ("HYWenHei-85W", 12))
         self.load_help()
 
     def load_help(self):
@@ -80,7 +80,7 @@ class Help:
             relief=RIDGE,
             anchor="nw",
             justify=LEFT,
-            wraplength=window_width * 0.8 * 0.82,
+            wraplength=window_width * 0.8 * 0.81,
         )
         self.detail.place(
             x=int(window_width * 0.8 * 0.18), y=0, relheight=1, relwidth=0.82

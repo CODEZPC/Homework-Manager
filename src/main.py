@@ -46,6 +46,7 @@ def acquire_lock(lock_path=".\\lock\\homework.lock"):
     except PermissionError:
         return None
 
+
 class HomeworkFunc:
     def __init__(self):
         self.SUBJECT_CODES = [
@@ -88,11 +89,11 @@ class HomeworkFunc:
 
         self.TIME_OUT = 300
 
-
     def analyze_time(self, timestamp, emphasize="自动"):
         """
         计算目标时间与当前时间的关系，返回一个字符串表示目标时间的状态。
         """
+
         def emphasize_prefix(level):
             if level == "自动":
                 return 1
@@ -138,10 +139,12 @@ class HomeworkFunc:
         elif timestamp < time_day_start + 86400 * (8 - int(week_now)):
             return (f"周{we[int(w)]}{t}收", 0 if auto else emphasize_prefix(emphasize))
         elif timestamp < time_day_start + 86400 * (15 - int(week_now)):
-            return (f"下周{we[int(w)]}{t}收", 0 if auto else emphasize_prefix(emphasize))
+            return (
+                f"下周{we[int(w)]}{t}收",
+                0 if auto else emphasize_prefix(emphasize),
+            )
         else:
             return (f"{time.strftime('%Y/%m/%d', time.localtime(timestamp))}收", 0)
-
 
     def getwidth(self, object, tki):
         """
@@ -161,7 +164,6 @@ class HomeworkFunc:
             font = tkfont.Font(root=tki)
         return font.measure(text)
 
-
     def resource_check(self, subject_codes):
         """
         检查资源是否存在，如不存在则修复
@@ -176,7 +178,6 @@ class HomeworkFunc:
                     data[code] = []
                 json.dump(data, f, ensure_ascii=False, indent=4)
 
-
     def uri_classisland(self, uri, mode="run"):
         """
         调用 ClassIsland 的 URI 解析接口
@@ -185,10 +186,16 @@ class HomeworkFunc:
         :param mode: 解析模式，默认为 "run"，表示直接运行解析结果 -> ["run", "revert"]
         """
         if self.ENABLE_CLASSISLAND:
-            subprocess.Popen(f"start classisland://app/api/automation/{mode}/{uri}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.Popen(
+                f"start classisland://app/api/automation/{mode}/{uri}",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
             return True
         else:
             return False
+
 
 class HomeworkTool:
     def __init__(self):
@@ -196,7 +203,7 @@ class HomeworkTool:
         # 默认UI配置
         tk.option_add("*Background", "#23272E")
         tk.option_add("*Foreground", "#C8C8C8")
-        tk.option_add("*Font", ("JetBrains Mono", 18))
+        tk.option_add("*Font", ("Jetbrains mono", 18))
         self.load_ui()
 
         # 列表初始化
@@ -586,15 +593,11 @@ class HomeworkTool:
         self.mask_right.place(x=tk.winfo_screenwidth() - 17, y=0, relheight=1)
         self.ui_info_basic.place(x=10, y=tk.winfo_screenheight() - 20)
         self.ui_info_time.place(
-            x=func.getwidth(self.ui_info_basic, tk)
-            + self.ui_info_basic.winfo_x()
-            + 10,
+            x=func.getwidth(self.ui_info_basic, tk) + self.ui_info_basic.winfo_x() + 10,
             y=tk.winfo_screenheight() - 20,
         )
         self.ui_info_homework.place(
-            x=func.getwidth(self.ui_info_time, tk)
-            + self.ui_info_time.winfo_x()
-            + 10,
+            x=func.getwidth(self.ui_info_time, tk) + self.ui_info_time.winfo_x() + 10,
             y=tk.winfo_screenheight() - 20,
         )
         self.ui_info_load.place(
@@ -604,15 +607,11 @@ class HomeworkTool:
             y=tk.winfo_screenheight() - 20,
         )
         self.ui_info_mouse.place(
-            x=func.getwidth(self.ui_info_load, tk)
-            + self.ui_info_load.winfo_x()
-            + 10,
+            x=func.getwidth(self.ui_info_load, tk) + self.ui_info_load.winfo_x() + 10,
             y=tk.winfo_screenheight() - 20,
         )
         self.ui_info_tick.place(
-            x=func.getwidth(self.ui_info_mouse, tk)
-            + self.ui_info_mouse.winfo_x()
-            + 10,
+            x=func.getwidth(self.ui_info_mouse, tk) + self.ui_info_mouse.winfo_x() + 10,
             y=tk.winfo_screenheight() - 20,
         )
 
@@ -756,7 +755,7 @@ class HomeworkTool:
             # COMMON
             color_fg_homework = COLOR
             color_bg_homework = "#23272E"
-        
+
         text_load = f"Loads: {self.load_amount}"
         if self.load_amount > 200:
             if flash_tick // flash_load % 2 != 0:
@@ -862,7 +861,9 @@ class HomeworkTool:
         Label(new_window, text=" ").grid(row=0, column=0)
         Label(new_window, text=" ").grid(row=999, column=999)
 
-        Label(new_window, text="科目", bg="#23272E").grid(row=1, column=1)
+        Label(new_window, text="科目", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
+            row=1, column=1
+        )
         subject_var = StringVar(new_window)
         if subject_index is not None and 0 <= subject_index < len(
             self.subject_display_names
@@ -874,13 +875,19 @@ class HomeworkTool:
             row=1, column=2
         )
 
-        Label(new_window, text="内容", bg="#23272E").grid(row=2, column=1)
-        content_entry = Entry(new_window, width=60, relief=RIDGE)
+        Label(new_window, text="内容", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
+            row=2, column=1
+        )
+        content_entry = Entry(
+            new_window, width=60, relief=RIDGE, font=("HYWenHei-85W", 16)
+        )
         content_entry.grid(row=2, column=2)
         if content_text:
             content_entry.insert(0, content_text)
 
-        Label(new_window, text="  截止时间  ", bg="#23272E").grid(row=3, column=1)
+        Label(
+            new_window, text="  截止时间  ", bg="#23272E", font=("HYWenHei-85W", 16)
+        ).grid(row=3, column=1)
 
         # * 重要：时间解析位
         if deadline_timestamp is not None:
@@ -902,10 +909,13 @@ class HomeworkTool:
             textvariable=StringVar(new_window, value=time_value),
             relief=FLAT,
             justify="center",
+            font=("HYWenHei-85W", 16),
         )
         time_entry.grid(row=3, column=2)
 
-        Label(new_window, text="优先级", bg="#23272E").grid(row=4, column=1)
+        Label(new_window, text="优先级", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
+            row=4, column=1
+        )
         emphasize_var = StringVar(new_window)
         if emphasize_index is not None and 0 <= emphasize_index < len(
             self.emphasize_levels
@@ -979,15 +989,27 @@ class HomeworkTool:
         def show_help():
             helper = help.Help()
 
-        Button(new_window, text="提交", command=submit, relief=FLAT).grid(
-            row=5, column=2, sticky="e"
-        )
-        Button(new_window, text="取消", command=new_window.destroy, relief=FLAT).grid(
-            row=5, column=2, sticky="w"
-        )
-        Button(new_window, text="帮助", command=show_help, relief=FLAT).grid(
-            row=5, column=2, sticky="s"
-        )
+        Button(
+            new_window,
+            text="提交",
+            command=submit,
+            relief=FLAT,
+            font=("HYWenHei-85W", 16),
+        ).grid(row=5, column=2, sticky="e")
+        Button(
+            new_window,
+            text="取消",
+            command=new_window.destroy,
+            relief=FLAT,
+            font=("HYWenHei-85W", 16),
+        ).grid(row=5, column=2, sticky="w")
+        Button(
+            new_window,
+            text="使用手册",
+            command=show_help,
+            relief=FLAT,
+            font=("HYWenHei-85W", 16),
+        ).grid(row=5, column=2, sticky="s")
         # 将窗口居中偏下显示（不改变窗口大小）
         new_window.update_idletasks()
         sw = new_window.winfo_screenwidth()
