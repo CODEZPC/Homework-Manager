@@ -153,15 +153,27 @@ def uri_classisland(uri, mode="run"):
 
 def _sort_key(item):
     t = item.get("time", 0)
-    # 规范化字符串值
-    if isinstance(t, str):
-        return (2, 2)
-    else:
-        # 非字符串（通常为 int/float）
-        try:
-            num = float(t)
-            if num == 0:
-                return (2, 1)
-            return (1, num)
-        except Exception:
-            return (2, 2)
+    e = item.get("emphasize", "自动")
+    # 使用 analyze_time 获取优先级（数字越大优先越高），随后按时间再按文字排序
+    try:
+        label, prio = analyze_time(t, e)
+    except Exception:
+        label, prio = (str(t), 0)
+
+    # 数字时间：按优先级降序（因此返回 -prio 以实现降序），再按时间升序，再按文字
+    if isinstance(t, (int, float)):
+        return (-prio, t, label)
+
+    # 非数字时间（字符串等）：放到数字时间之后，按优先级降序，再按文字
+    return (-prio, float("inf"), str(label))
+
+def speed_test():
+    a = 0
+    t = time.time()
+    for i in range(10000000):
+        a += i
+    t = time.time() - t
+    return 10000000 / t
+
+if __name__ == "__main__":
+    print(speed_test())
