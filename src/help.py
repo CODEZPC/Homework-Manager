@@ -62,6 +62,16 @@ class Help:
         tk.option_add("*Foreground", "#C8C8C8")
         tk.option_add("*Font", ("HYWenHei-85W", 12))
         self.load_help()
+        
+        self.tick = 0
+
+        tk.after(1, self.on_tick)
+    
+    def on_tick(self):
+        self.tick += 1
+        if self.tick >= 1000000:
+            self.tick = 0
+        tk.after(1000, self.on_tick)
 
     def load_help(self):
         self.content = Listbox(
@@ -69,7 +79,8 @@ class Help:
             highlightthickness=0,
             borderwidth=1,
             relief=RIDGE,
-            selectbackground="#7289DA",
+            selectbackground="#23272E",
+            selectforeground="#7AA4FF",
             selectmode=SINGLE,
         )
         self.content.place(x=0, y=0, relheight=1, relwidth=0.18)
@@ -96,6 +107,8 @@ class Help:
         self._suspend_events = False
 
         self.content.bind("<<ListboxSelect>>", self.show_detail)
+        self.content.bind("<Enter>", lambda e: self.content.config(fg="#C8C8C8"))
+        self.content.bind("<Leave>", lambda e: self.content.config(fg="#4D4D4D"))
 
         # initial render: only top-level entries
         self.rebuild_list(self.expanded_path)
