@@ -62,16 +62,6 @@ class Help:
         tk.option_add("*Foreground", "#C8C8C8")
         tk.option_add("*Font", ("HYWenHei-85W", 12))
         self.load_help()
-        
-        self.tick = 0
-
-        tk.after(1, self.on_tick)
-    
-    def on_tick(self):
-        self.tick += 1
-        if self.tick >= 1000000:
-            self.tick = 0
-        tk.after(1000, self.on_tick)
 
     def load_help(self):
         self.content = Listbox(
@@ -99,8 +89,8 @@ class Help:
 
         # build a tree representation from CONFIG
         self._parse_config()
-        # track which path is expanded (list of names from root)
-        self.expanded_path = []
+        # track which paths are expanded (set of path tuples)
+        self.expanded_paths = set()
         # parallel list storing the full path (tuple) for each visible row
         self.display_paths = []
         # prevent handling programmatic selection events
@@ -111,13 +101,13 @@ class Help:
         self.content.bind("<Leave>", lambda e: self.content.config(fg="#4D4D4D"))
 
         # initial render: only top-level entries
-        self.rebuild_list(self.expanded_path)
+        self.rebuild_list()
 
         # 默认选中并显示 CONFIG 第一项（如果存在）
         if self.roots:
-            self.expanded_path = [self.roots[0]]
+            self.expanded_paths.add((self.roots[0],))
             self._suspend_events = True
-            self.rebuild_list(self.expanded_path)
+            self.rebuild_list()
             if self.display_paths:
                 self.content.selection_set(0)
                 self.content.activate(0)
@@ -167,7 +157,7 @@ class Help:
                 self.roots.append(k)
                 process_item(k, v, parent=None)
 
-    def rebuild_list(self, expanded_path):
+    def rebuild_list(self):
         self.content.delete(0, END)
         self.display_paths = []
 
@@ -176,8 +166,8 @@ class Help:
             indent = "  " * depth
             self.content.insert(END, f"{indent}{name}")
             self.display_paths.append(tuple(path))
-            # if this node is marked as expanded in the expanded_path, render its children
-            if len(expanded_path) > depth and expanded_path[depth] == name:
+            # if this node's path tuple is in expanded_paths, render its children
+            if tuple(path) in self.expanded_paths:
                 for child in self.nodes.get(name, {}).get("children", []):
                     insert_node(child, path + [child])
 
@@ -200,17 +190,19 @@ class Help:
         self.detail.config(text=desc)
 
         # decide new expanded path: if selected node has children, expand it;
-        # otherwise keep its ancestors expanded
-        if self.nodes.get(name, {}).get("children"):
-            new_expanded = list(path)
-        else:
-            new_expanded = list(path[:-1])
-
-        # update and rebuild view
-        self.expanded_path = new_expanded
+        # Toggle expansion for nodes with children; keep other expanded paths intact
         target_path = list(path)
+        if self.nodes.get(name, {}).get("children"):
+            t = tuple(path)
+            if t in self.expanded_paths:
+                # collapse: remove this path and any descendant expansions
+                self.expanded_paths = {p for p in self.expanded_paths if not (len(p) >= len(t) and p[: len(t)] == t)}
+            else:
+                # expand: add this path
+                self.expanded_paths.add(t)
+
         self._suspend_events = True
-        self.rebuild_list(self.expanded_path)
+        self.rebuild_list()
 
         # try to restore selection to the originally selected path (or its nearest ancestor)
         try:
