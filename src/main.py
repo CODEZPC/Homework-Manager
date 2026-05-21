@@ -216,7 +216,7 @@ class HomeworkTool:
                 fill = COLOR
             # 在 canvas 内使用 (0, y) 放置，anchor='nw' 以左上角对齐，保证与原来 place(x=45,y=40+...) 对齐
             item = self.list_canvas.create_text(
-                0, y, text=text, anchor="nw", fill=fill, font=("JetBrains Mono", 18)
+                0, y, text=text, anchor="nw", fill=fill, font=("HYWenHei-85W", 18)
             )
             self.canvas_items.append(item)
             self.homework_list.append(text)
@@ -277,8 +277,9 @@ class HomeworkTool:
                         tk,
                         text=time_status[0],
                         width=13,
-                        justify="right",
+                        justify="left",
                         anchor="e",
+                        font=("HYWenHei-85W", 16)
                     )
                 )
                 if time_status[1] >= 3:
@@ -782,7 +783,7 @@ class HomeworkTool:
                     raise KeyboardInterrupt
 
                 new_deadline_ts = int(
-                    time.mktime(time.strptime(deadline_str, "%Y/%m/%d %H:%M"))
+                    time.mktime(time.strptime(deadline_str.replace("：", ":").replace("-", "/"), "%Y/%m/%d %H:%M"))
                 )
             except ValueError:
                 new_deadline_ts = deadline_str
