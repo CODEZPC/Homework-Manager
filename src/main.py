@@ -22,7 +22,7 @@ import homeworkfunc
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.5.3"
+VERSION = "1.5.4"
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -778,12 +778,12 @@ class HomeworkTool:
 
             # * 重要：时间解析位
             try:
-                if deadline_str == "0" or deadline_str == "":
+                if deadline_str == "0" or deadline_str == "" or deadline_str == "不收":
                     new_deadline_ts = 0
                     raise KeyboardInterrupt
 
                 new_deadline_ts = int(
-                    time.mktime(time.strptime(deadline_str.replace("：", ":").replace("-", "/"), "%Y/%m/%d %H:%M"))
+                    time.mktime(time.strptime(homeworkfunc.analyze_time_string(deadline_str), "%Y/%m/%d %H:%M"))
                 )
             except ValueError:
                 new_deadline_ts = deadline_str

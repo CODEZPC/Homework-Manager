@@ -1,6 +1,7 @@
 import sys
 import time
 import json
+import re
 import subprocess
 import tkinter.font as tkfont
 
@@ -76,7 +77,7 @@ def analyze_time(timestamp, emphasize="自动"):
     w = time.strftime("%w", time.localtime(timestamp))
     auto = emphasize == "自动"
     if timestamp == 0:
-        return ("暂时不收", 0 if auto else emphasize_prefix(emphasize))
+        return ("不收", 0 if auto else emphasize_prefix(emphasize))
     elif timestamp < time.time() - TIME_OUT:
         return ("时间已过", -1)
     elif timestamp < time.time() - 60:
@@ -100,6 +101,19 @@ def analyze_time(timestamp, emphasize="自动"):
         )
     else:
         return (f"{time.strftime('%Y/%m/%d', time.localtime(timestamp))}收", 0)
+
+def analyze_time_string(timestring):
+    timestring = timestring.replace("：", ":")
+    timestring = timestring.replace("-", "/")
+
+    y = time.strftime("%Y", time.localtime())
+    m = time.strftime("%m", time.localtime())
+    d = time.strftime("%d", time.localtime())
+
+    if re.match(r"\d\d:\d\d", timestring):
+        timestring = f"{y}/{m}/{d} {timestring}"
+
+    return timestring
 
 def getwidth(object, tki):
     """
