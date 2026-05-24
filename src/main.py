@@ -939,7 +939,6 @@ def main():
 
     # 创建全局 tk（保持与原代码兼容）并启动应用
     global tk
-    helper = help.Help()
     tk = Tk()
     app = HomeworkTool()
     tk.mainloop()

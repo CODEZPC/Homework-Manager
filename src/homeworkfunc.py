@@ -110,7 +110,7 @@ def analyze_time_string(timestring):
     m = time.strftime("%m", time.localtime())
     d = time.strftime("%d", time.localtime())
 
-    if re.match(r"\d\d:\d\d", timestring):
+    if re.match(r"\d{1,2}:\d\d", timestring):
         timestring = f"{y}/{m}/{d} {timestring}"
 
     return timestring
