@@ -928,8 +928,6 @@ def main():
     """
     程序入口：尝试获取进程锁，启动 GUI 主循环。
     """
-    # 将当前工作目录切换到程序自身所在目录，确保相对路径始终指向项目文件
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     _lock = acquire_lock()
     if not _lock:
