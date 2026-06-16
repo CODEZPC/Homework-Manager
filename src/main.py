@@ -14,15 +14,18 @@ import keyboard
 import os
 import psutil
 import sys
+import threading
 import time
 import msvcrt
 import help
 import homeworkfunc
+import updater
 
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
 VERSION = "1.5.4"
+VERSION_NUM = 1005004000
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -448,6 +451,10 @@ class HomeworkTool:
             x=homeworkfunc.getwidth(self.ui_info_mouse, tk) + self.ui_info_mouse.winfo_x() + 10,
             y=tk.winfo_screenheight() - 20,
         )
+        self.ui_info_message.place(
+            x=homeworkfunc.getwidth(self.ui_info_tick, tk) + self.ui_info_tick.winfo_x() + 10,
+            y=tk.winfo_screenheight() - 20,
+        )
         if not homeworkfunc.ENABLE_CLASSISLAND:
             self.ui_title.place(x=10, y=5)
 
@@ -538,10 +545,13 @@ class HomeworkTool:
         self.ui_info_tick = Label(
             tk, text="", font=("JetBrains Mono", 7), fg=COLOR
         )  # 用于显示 tick 计数
+        self.ui_info_message = Label(
+            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+        )
 
         homeworkfunc.uri_classisland("homeworkmode-on")
 
-    def info(self, flash_tick=0):
+    def info(self, flash_tick=0, ui_refresh=0):
 
         # 预处理与计时
         def is_foreground():
@@ -644,7 +654,22 @@ class HomeworkTool:
 
         self.ui_info_tick.config(text=f"Tick: {self.tick:03d}")
 
-        tk.after(33, lambda: self.info(flash_tick))
+        if updater.STATUS == "None":
+            self.ui_info_message.configure(text="",fg=COLOR,bg="#23272E")
+        elif updater.STATUS == "Connecting":
+            self.ui_info_message.configure(text="Connecting...",fg="#FFFFFF",bg="#23272E")
+        elif updater.STATUS == "Needed":
+            self.ui_info_message.configure(text=f"NEW UPDATE FOR {updater.UPDATE_NAME} ({updater.UPDATE_TYPE} | {updater.UPDATE_VER})",fg="#FFFFFF",bg="#005EFF")
+        elif updater.STATUS == "Failed":
+            self.ui_info_message.configure(text=f"OFFLINE",fg="#FF0000",bg="#23272E")
+
+        if ui_refresh == 60:
+            ui_refresh = 0
+            self.ui_pack()
+        else:
+            ui_refresh += 1
+
+        tk.after(33, lambda: self.info(flash_tick, ui_refresh))
 
     def clear_homework(self):
         # 清理所有“时间已过”的作业（时间戳非0且早于当前时间一定时间以前）
@@ -942,6 +967,10 @@ def main():
     global tk
     tk = Tk()
     app = HomeworkTool()
+
+    thread = threading.Thread(target=updater.check)
+    thread.start()
+
     tk.mainloop()
 
 
