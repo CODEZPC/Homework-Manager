@@ -13,6 +13,7 @@ import json
 import keyboard
 import os
 import psutil
+import subprocess
 import sys
 import threading
 import time
@@ -24,8 +25,8 @@ import updater
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.5.4"
-VERSION_NUM = 1005004000
+VERSION = "1.5.5"
+VERSION_NUM = 1005005000
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -48,6 +49,7 @@ def acquire_lock(lock_path=".\\lock\\homework.lock"):
             return None
     except PermissionError:
         return None
+
 
 class HomeworkTool:
     def __init__(self):
@@ -282,7 +284,7 @@ class HomeworkTool:
                         width=13,
                         justify="left",
                         anchor="e",
-                        font=("HYWenHei-85W", 16)
+                        font=("HYWenHei-85W", 16),
                     )
                 )
                 if time_status[1] >= 3:
@@ -430,11 +432,15 @@ class HomeworkTool:
         self.mask_right.place(x=tk.winfo_screenwidth() - 17, y=0, relheight=1)
         self.ui_info_basic.place(x=10, y=tk.winfo_screenheight() - 20)
         self.ui_info_time.place(
-            x=homeworkfunc.getwidth(self.ui_info_basic, tk) + self.ui_info_basic.winfo_x() + 10,
+            x=homeworkfunc.getwidth(self.ui_info_basic, tk)
+            + self.ui_info_basic.winfo_x()
+            + 10,
             y=tk.winfo_screenheight() - 20,
         )
         self.ui_info_homework.place(
-            x=homeworkfunc.getwidth(self.ui_info_time, tk) + self.ui_info_time.winfo_x() + 10,
+            x=homeworkfunc.getwidth(self.ui_info_time, tk)
+            + self.ui_info_time.winfo_x()
+            + 10,
             y=tk.winfo_screenheight() - 20,
         )
         self.ui_info_load.place(
@@ -444,15 +450,21 @@ class HomeworkTool:
             y=tk.winfo_screenheight() - 20,
         )
         self.ui_info_mouse.place(
-            x=homeworkfunc.getwidth(self.ui_info_load, tk) + self.ui_info_load.winfo_x() + 10,
+            x=homeworkfunc.getwidth(self.ui_info_load, tk)
+            + self.ui_info_load.winfo_x()
+            + 10,
             y=tk.winfo_screenheight() - 20,
         )
         self.ui_info_tick.place(
-            x=homeworkfunc.getwidth(self.ui_info_mouse, tk) + self.ui_info_mouse.winfo_x() + 10,
+            x=homeworkfunc.getwidth(self.ui_info_mouse, tk)
+            + self.ui_info_mouse.winfo_x()
+            + 10,
             y=tk.winfo_screenheight() - 20,
         )
         self.ui_info_message.place(
-            x=homeworkfunc.getwidth(self.ui_info_tick, tk) + self.ui_info_tick.winfo_x() + 10,
+            x=homeworkfunc.getwidth(self.ui_info_tick, tk)
+            + self.ui_info_tick.winfo_x()
+            + 10,
             y=tk.winfo_screenheight() - 20,
         )
         if not homeworkfunc.ENABLE_CLASSISLAND:
@@ -545,8 +557,21 @@ class HomeworkTool:
         self.ui_info_tick = Label(
             tk, text="", font=("JetBrains Mono", 7), fg=COLOR
         )  # 用于显示 tick 计数
-        self.ui_info_message = Label(
-            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+        self.ui_info_message = Button(
+            tk,
+            text="",
+            font=("JetBrains Mono", 7),
+            fg=COLOR,
+            relief=FLAT,
+            activebackground="#23272E",
+            activeforeground="#005EFF",
+            bd=0,
+            command=lambda: subprocess.Popen(
+                f"start https://github.com/CODEZPC/Reader-5/releases",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            ),
         )
 
         homeworkfunc.uri_classisland("homeworkmode-on")
@@ -655,13 +680,19 @@ class HomeworkTool:
         self.ui_info_tick.config(text=f"Tick: {self.tick:03d}")
 
         if updater.STATUS == "None":
-            self.ui_info_message.configure(text="",fg=COLOR,bg="#23272E")
+            self.ui_info_message.configure(text="", fg=COLOR, bg="#23272E")
         elif updater.STATUS == "Connecting":
-            self.ui_info_message.configure(text="Connecting...",fg="#FFFFFF",bg="#23272E")
+            self.ui_info_message.configure(
+                text="Connecting...", fg="#FFFFFF", bg="#23272E"
+            )
         elif updater.STATUS == "Needed":
-            self.ui_info_message.configure(text=f"NEW UPDATE FOR {updater.UPDATE_NAME} ({updater.UPDATE_TYPE} | {updater.UPDATE_VER})",fg="#FFFFFF",bg="#005EFF")
+            self.ui_info_message.configure(
+                text=f"NEW UPDATE FOR {updater.UPDATE_NAME} ({updater.UPDATE_TYPE} | {updater.UPDATE_VER})",
+                fg="#FFFFFF",
+                bg="#005EFF",
+            )
         elif updater.STATUS == "Failed":
-            self.ui_info_message.configure(text=f"OFFLINE",fg="#FF0000",bg="#23272E")
+            self.ui_info_message.configure(text=f"OFFLINE", fg="#FF0000", bg="#23272E")
 
         if ui_refresh == 60:
             ui_refresh = 0
@@ -808,7 +839,12 @@ class HomeworkTool:
                     raise KeyboardInterrupt
 
                 new_deadline_ts = int(
-                    time.mktime(time.strptime(homeworkfunc.analyze_time_string(deadline_str), "%Y/%m/%d %H:%M"))
+                    time.mktime(
+                        time.strptime(
+                            homeworkfunc.analyze_time_string(deadline_str),
+                            "%Y/%m/%d %H:%M",
+                        )
+                    )
                 )
             except ValueError:
                 new_deadline_ts = deadline_str
