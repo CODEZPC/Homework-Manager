@@ -567,7 +567,7 @@ class HomeworkTool:
             activeforeground="#005EFF",
             bd=0,
             command=lambda: subprocess.Popen(
-                f"start https://github.com/CODEZPC/Reader-5/releases",
+                f"start https://github.com/CODEZPC/Homework-Manager/raw/refs/heads/main/main.exe",
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
