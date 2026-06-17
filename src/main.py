@@ -25,8 +25,8 @@ import updater
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.5.5"
-VERSION_NUM = 1005005000
+VERSION = "1.5.6"
+VERSION_NUM = 1005006000
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -778,7 +778,7 @@ class HomeworkTool:
 
         Label(
             new_window, text="  截止时间  ", bg="#23272E", font=("HYWenHei-85W", 16)
-        ).grid(row=3, column=1)
+        ).grid(row=3, column=1, rowspan=2)
 
         # * 重要：时间解析位
         if deadline_timestamp is not None:
@@ -804,8 +804,127 @@ class HomeworkTool:
         )
         time_entry.grid(row=3, column=2)
 
+        time_select_frame = Frame(new_window, relief=FLAT)
+        time_select_frame.grid(row=4, column=2)
+
+        time_select = []
+
+        time_select.append(
+            Button(
+                time_select_frame,
+                text="不收",
+                command=lambda: time_entry.configure(
+                    textvariable=StringVar(
+                        time_select_frame,
+                        value="0",
+                    )
+                ),
+                relief=FLAT,
+                font=("HYWenHei-85W", 16),
+            )
+        )
+        time_select.append(
+            Button(
+                time_select_frame,
+                text="-1天",
+                command=lambda: time_entry.configure(
+                    textvariable=StringVar(
+                        time_select_frame,
+                        value=time.strftime(
+                            "%Y/%m/%d 22:10",
+                            time.localtime(
+                                time.mktime(
+                                    time.strptime(
+                                        time_entry.get(), "%Y/%m/%d %H:%M"
+                                    )
+                                )
+                                - 86400
+                            ),
+                        ),
+                    )
+                ),
+                relief=FLAT,
+                font=("HYWenHei-85W", 16),
+            )
+        )
+        time_select.append(
+            Button(
+                time_select_frame,
+                text="今天",
+                command=lambda: time_entry.configure(
+                    textvariable=StringVar(
+                        time_select_frame,
+                        value=time.strftime(
+                            "%Y/%m/%d 22:10", time.localtime(time.time())
+                        ),
+                    )
+                ),
+                relief=FLAT,
+                font=("HYWenHei-85W", 16),
+            )
+        )
+        time_select.append(
+            Button(
+                time_select_frame,
+                text="明天",
+                command=lambda: time_entry.configure(
+                    textvariable=StringVar(
+                        time_select_frame,
+                        value=time.strftime(
+                            "%Y/%m/%d 22:10", time.localtime(time.time() + 86400)
+                        ),
+                    )
+                ),
+                relief=FLAT,
+                font=("HYWenHei-85W", 16),
+            )
+        )
+        time_select.append(
+            Button(
+                time_select_frame,
+                text="后天",
+                command=lambda: time_entry.configure(
+                    textvariable=StringVar(
+                        time_select_frame,
+                        value=time.strftime(
+                            "%Y/%m/%d 22:10", time.localtime(time.time() + 86400 * 2)
+                        ),
+                    )
+                ),
+                relief=FLAT,
+                font=("HYWenHei-85W", 16),
+            )
+        )
+        time_select.append(
+            Button(
+                time_select_frame,
+                text="+1天",
+                command=lambda: time_entry.configure(
+                    textvariable=StringVar(
+                        time_select_frame,
+                        value=time.strftime(
+                            "%Y/%m/%d 22:10",
+                            time.localtime(
+                                time.mktime(
+                                    time.strptime(
+                                        time_entry.get(), "%Y/%m/%d %H:%M"
+                                    )
+                                )
+                                + 86400
+                            ),
+                        ),
+                    )
+                ),
+                relief=FLAT,
+                font=("HYWenHei-85W", 16),
+            )
+        )
+
+        for i in time_select:
+            i.pack(side="left", expand=True)
+
         Label(new_window, text="优先级", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
-            row=4, column=1
+            row=5, column=1
         )
         emphasize_var = StringVar(new_window)
         if emphasize_index is not None and 0 <= emphasize_index < len(
@@ -815,7 +934,7 @@ class HomeworkTool:
         else:
             emphasize_var.set(self.emphasize_levels[0])
         OptionMenu(new_window, emphasize_var, *self.emphasize_levels).grid(
-            row=4, column=2
+            row=5, column=2
         )
 
         def submit():
@@ -891,21 +1010,21 @@ class HomeworkTool:
             command=submit,
             relief=FLAT,
             font=("HYWenHei-85W", 16),
-        ).grid(row=5, column=2, sticky="e")
+        ).grid(row=6, column=2, sticky="e")
         Button(
             new_window,
             text="取消",
             command=new_window.destroy,
             relief=FLAT,
             font=("HYWenHei-85W", 16),
-        ).grid(row=5, column=2, sticky="w")
+        ).grid(row=6, column=2, sticky="w")
         Button(
             new_window,
             text="使用手册",
             command=show_help,
             relief=FLAT,
             font=("HYWenHei-85W", 16),
-        ).grid(row=5, column=2, sticky="s")
+        ).grid(row=6, column=2, sticky="s")
         # 将窗口居中偏下显示（不改变窗口大小）
         new_window.update_idletasks()
         sw = new_window.winfo_screenwidth()
