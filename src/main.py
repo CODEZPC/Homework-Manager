@@ -25,8 +25,8 @@ import updater
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.5.6.004"
-VERSION_NUM = 1005006004
+VERSION = "1.5.7"
+VERSION_NUM = 1005007000
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -685,6 +685,12 @@ class HomeworkTool:
                 text=f"Downloading... ({updater.DOWNLOAD_PROCESS:.2f}% {updater.DOWNLOAD_SPEED / 1048576 :.2f}MB/s TOTAL:{updater.DOWNLOAD_SIZE / 1048576 :.1f}MB)",
                 fg="#FFFFFF",
                 bg="#005EFF",
+            )
+        elif updater.STATUS == "Completed":
+            self.ui_info_message.configure(
+                text=f"Need restart",
+                fg="#000000",
+                bg="#00FF40",
             )
         elif updater.STATUS == "Failed":
             self.ui_info_message.configure(text=f"OFFLINE", fg="#FF0000", bg="#23272E")

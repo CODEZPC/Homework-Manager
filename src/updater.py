@@ -2,11 +2,13 @@ from typing import *
 import requests
 import json
 import os
+import tempfile
+import subprocess
 import threading
 import time
 import main
 
-STATUS: Literal["None", "Connecting", "Needed", "Failed", "Downloading"] = "None"
+STATUS: Literal["None", "Connecting", "Needed", "Failed", "Downloading", "Completed"] = "None"
 UPDATE_NUM = None
 UPDATE_NAME = None
 UPDATE_VER = None
@@ -48,6 +50,8 @@ def response(event):
     if STATUS == "Needed":
         STATUS = "Connecting"
         threading.Thread(target=download_update).start()
+    if STATUS == "Completed":
+        restart()
 
 def download_update():
     global DOWNLOAD_SPEED, DOWNLOAD_PROCESS, DOWNLOAD_SIZE, STATUS
@@ -97,12 +101,51 @@ def download_update():
         # 下载完成
         DOWNLOAD_PROCESS = 100.0
         DOWNLOAD_SPEED = 0.0
+        STATUS = "Completed"
 
     except Exception:
         # 出错时可设置标记，例如进度设为 -1 供外部判断
         DOWNLOAD_PROCESS = -1.0
         DOWNLOAD_SPEED = 0.0
-        raise
+        STATUS = "Failed"
+    
+def restart():
+    """
+    终止主程序，将 ./update/main.exe 移动/覆盖到当前目录的 main.exe，
+    删除 ./update 目录，然后启动新的 main.exe。
+    调用后当前进程立即退出。
+    """
+    update_dir = "./update"        # 下载存放目录
+    new_exe_name = "main.exe"       # 下载得到的新程序
+    target_exe_name = "main.exe"    # 要被替换的旧程序（当前目录）
+
+    new_exe_path = os.path.abspath(os.path.join(update_dir, new_exe_name))
+    old_exe_path = os.path.abspath(target_exe_name)
+
+    if not os.path.isfile(new_exe_path):
+        raise FileNotFoundError(f"更新文件未找到: {new_exe_path}")
+
+    # 生成临时批处理脚本
+    script = f"""@echo off
+timeout /t 1 /nobreak >nul
+move /Y "{new_exe_path}" "{old_exe_path}"
+rmdir /S /Q "{os.path.abspath(update_dir)}"
+start "" "{old_exe_path}"
+del "%~f0" & exit
+"""
+    fd, script_path = tempfile.mkstemp(suffix=".bat", prefix="updater_restart_")
+    with os.fdopen(fd, 'w') as f:
+        f.write(script)
+
+    # 无窗口运行批处理
+    subprocess.Popen(
+        ["cmd.exe", "/c", script_path],
+        shell=False,
+        creationflags=subprocess.CREATE_NO_WINDOW
+    )
+
+    # 立即结束当前 Python 进程
+    os._exit(0)
 
 if __name__ == "__main__":
     pass
