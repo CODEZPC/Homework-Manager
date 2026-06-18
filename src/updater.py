@@ -15,7 +15,7 @@ def check():
 
     STATUS = "Connecting"
 
-    site = f"https://codezpc.cn/CodeAPI/Homework-Manager/update.json"
+    site = f"https://codezpc.cn/Homework-Manager/update.json"
     try:
         # 发送HTTP GET请求
         response = requests.get(site)
