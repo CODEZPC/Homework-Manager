@@ -25,8 +25,8 @@ import updater
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.5.6"
-VERSION_NUM = 1005006000
+VERSION = "1.5.6.002"
+VERSION_NUM = 1005006002
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -567,7 +567,7 @@ class HomeworkTool:
             activeforeground="#005EFF",
             bd=0,
             command=lambda: subprocess.Popen(
-                f"start https://github.com/CODEZPC/Homework-Manager/raw/refs/heads/main/main.exe",
+                f"start https://codezpc.cn/Homework-Manager/main.exe",
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
