@@ -25,8 +25,8 @@ import updater
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.5.6.002"
-VERSION_NUM = 1005006002
+VERSION = "1.5.6.004"
+VERSION_NUM = 1005006004
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -557,22 +557,11 @@ class HomeworkTool:
         self.ui_info_tick = Label(
             tk, text="", font=("JetBrains Mono", 7), fg=COLOR
         )  # 用于显示 tick 计数
-        self.ui_info_message = Button(
-            tk,
-            text="",
-            font=("JetBrains Mono", 7),
-            fg=COLOR,
-            relief=FLAT,
-            activebackground="#23272E",
-            activeforeground="#005EFF",
-            bd=0,
-            command=lambda: subprocess.Popen(
-                f"start https://codezpc.cn/Homework-Manager/main.exe",
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            ),
-        )
+        self.ui_info_message = Label(
+            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+        )  # 自动更新
+
+        self.ui_info_message.bind("<Button-1>", updater.response)
 
         homeworkfunc.uri_classisland("homeworkmode-on")
 
@@ -688,6 +677,12 @@ class HomeworkTool:
         elif updater.STATUS == "Needed":
             self.ui_info_message.configure(
                 text=f"NEW UPDATE FOR {updater.UPDATE_NAME} ({updater.UPDATE_TYPE} | {updater.UPDATE_VER})",
+                fg="#FFFFFF",
+                bg="#005EFF",
+            )
+        elif updater.STATUS == "Downloading":
+            self.ui_info_message.configure(
+                text=f"Downloading... ({updater.DOWNLOAD_PROCESS:.2f}% {updater.DOWNLOAD_SPEED / 1048576 :.2f}MB/s TOTAL:{updater.DOWNLOAD_SIZE / 1048576 :.1f}MB)",
                 fg="#FFFFFF",
                 bg="#005EFF",
             )
@@ -834,9 +829,7 @@ class HomeworkTool:
                             "%Y/%m/%d 22:10",
                             time.localtime(
                                 time.mktime(
-                                    time.strptime(
-                                        time_entry.get(), "%Y/%m/%d %H:%M"
-                                    )
+                                    time.strptime(time_entry.get(), "%Y/%m/%d %H:%M")
                                 )
                                 - 86400
                             ),
@@ -906,9 +899,7 @@ class HomeworkTool:
                             "%Y/%m/%d 22:10",
                             time.localtime(
                                 time.mktime(
-                                    time.strptime(
-                                        time_entry.get(), "%Y/%m/%d %H:%M"
-                                    )
+                                    time.strptime(time_entry.get(), "%Y/%m/%d %H:%M")
                                 )
                                 + 86400
                             ),
