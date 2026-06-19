@@ -25,8 +25,8 @@ import updater
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.0"
-VERSION_NUM = 1006000000
+VERSION = "1.6.0.1"
+VERSION_NUM = 1006000001
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -430,42 +430,42 @@ class HomeworkTool:
 
         self.mask_left.place(x=0, y=0, relheight=1)
         self.mask_right.place(x=tk.winfo_screenwidth() - 17, y=0, relheight=1)
-        self.ui_info_basic.place(x=10, y=tk.winfo_screenheight() - 20)
+        self.ui_info_basic.place(x=10, y=tk.winfo_screenheight() - 25)
         self.ui_info_time.place(
             x=homeworkfunc.getwidth(self.ui_info_basic, tk)
             + self.ui_info_basic.winfo_x()
             + 10,
-            y=tk.winfo_screenheight() - 20,
+            y=tk.winfo_screenheight() - 25,
         )
         self.ui_info_homework.place(
             x=homeworkfunc.getwidth(self.ui_info_time, tk)
             + self.ui_info_time.winfo_x()
             + 10,
-            y=tk.winfo_screenheight() - 20,
+            y=tk.winfo_screenheight() - 25,
         )
         self.ui_info_load.place(
             x=homeworkfunc.getwidth(self.ui_info_homework, tk)
             + self.ui_info_homework.winfo_x()
             + 10,
-            y=tk.winfo_screenheight() - 20,
+            y=tk.winfo_screenheight() - 25,
         )
         self.ui_info_mouse.place(
             x=homeworkfunc.getwidth(self.ui_info_load, tk)
             + self.ui_info_load.winfo_x()
             + 10,
-            y=tk.winfo_screenheight() - 20,
+            y=tk.winfo_screenheight() - 25,
         )
         self.ui_info_tick.place(
             x=homeworkfunc.getwidth(self.ui_info_mouse, tk)
             + self.ui_info_mouse.winfo_x()
             + 10,
-            y=tk.winfo_screenheight() - 20,
+            y=tk.winfo_screenheight() - 25,
         )
         self.ui_info_message.place(
             x=homeworkfunc.getwidth(self.ui_info_tick, tk)
             + self.ui_info_tick.winfo_x()
             + 10,
-            y=tk.winfo_screenheight() - 20,
+            y=tk.winfo_screenheight() - 25,
         )
         if not homeworkfunc.ENABLE_CLASSISLAND:
             self.ui_title.place(x=10, y=5)
@@ -540,25 +540,25 @@ class HomeworkTool:
         )
 
         self.ui_info_basic = Label(
-            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 用于显示基本信息
         self.ui_info_time = Label(
-            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 用于显示时间状态
         self.ui_info_homework = Label(
-            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 用于显示作业数量
         self.ui_info_load = Label(
-            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 用于显示负载
         self.ui_info_mouse = Label(
-            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 用于显示鼠标位置
         self.ui_info_tick = Label(
-            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 用于显示 tick 计数
         self.ui_info_message = Label(
-            tk, text="", font=("JetBrains Mono", 7), fg=COLOR
+            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 自动更新
 
         self.ui_info_message.bind("<Button-1>", updater.response)
