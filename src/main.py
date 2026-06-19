@@ -25,8 +25,8 @@ import updater
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.5.7"
-VERSION_NUM = 1005007000
+VERSION = "1.6.0"
+VERSION_NUM = 1006000000
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):

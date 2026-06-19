@@ -2,10 +2,11 @@ from typing import *
 import requests
 import json
 import os
-import tempfile
 import subprocess
+import tempfile
 import threading
 import time
+import sys
 import main
 
 STATUS: Literal["None", "Connecting", "Needed", "Failed", "Downloading", "Completed"] = "None"
@@ -17,6 +18,12 @@ UPDATE_TYPE = None
 DOWNLOAD_SPEED = None
 DOWNLOAD_PROCESS = None
 DOWNLOAD_SIZE = None
+
+
+def _app_dir() -> str:
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(os.path.abspath(sys.executable))
+    return os.path.dirname(os.path.abspath(__file__))
 
 
 def check():
@@ -59,7 +66,7 @@ def download_update():
     STATUS = "Downloading"
 
     url = "https://codezpc.cn/Homework-Manager/main.exe"
-    save_dir = "./update"
+    save_dir = os.path.join(_app_dir(), "update")
     os.makedirs(save_dir, exist_ok=True)
     file_path = os.path.join(save_dir, "main.exe")
 
@@ -115,37 +122,30 @@ def restart():
     删除 ./update 目录，然后启动新的 main.exe。
     调用后当前进程立即退出。
     """
-    update_dir = "./update"        # 下载存放目录
-    new_exe_name = "main.exe"       # 下载得到的新程序
-    target_exe_name = "main.exe"    # 要被替换的旧程序（当前目录）
+    app_dir = _app_dir()
+    update_dir = os.path.join(app_dir, "update")
+    new_exe_path = os.path.join(update_dir, "main.exe")
+    current_exe_path = os.path.join(app_dir, "main.exe")
 
-    new_exe_path = os.path.abspath(os.path.join(update_dir, new_exe_name))
-    old_exe_path = os.path.abspath(target_exe_name)
+    # 确保更新文件存在
+    if not os.path.exists(new_exe_path):
+        print("更新文件不存在，无法重启。")
+        return
+    
+    bat_path = os.path.join(app_dir, "update.bat")
+    with open(bat_path, "w", encoding="utf-8") as f:
+        f.write(f"""@echo off
+timeout /t 2 /nobreak >nul
+move /Y "{new_exe_path}" "{current_exe_path}"
+rd /s /q "{update_dir}"
+set _MEIPASS2=
+set PYINSTALLER_RESET_ENVIRONMENT=1
+start "" /D "{app_dir}" "{current_exe_path}"
+del /f /q "%~f0"
+""")
 
-    if not os.path.isfile(new_exe_path):
-        raise FileNotFoundError(f"更新文件未找到: {new_exe_path}")
-
-    # 生成临时批处理脚本
-    script = f"""@echo off
-timeout /t 1 /nobreak >nul
-move /Y "{new_exe_path}" "{old_exe_path}"
-rmdir /S /Q "{os.path.abspath(update_dir)}"
-start "" "{old_exe_path}"
-del "%~f0" & exit
-"""
-    fd, script_path = tempfile.mkstemp(suffix=".bat", prefix="updater_restart_")
-    with os.fdopen(fd, 'w') as f:
-        f.write(script)
-
-    # 无窗口运行批处理
-    subprocess.Popen(
-        ["cmd.exe", "/c", script_path],
-        shell=False,
-        creationflags=subprocess.CREATE_NO_WINDOW
-    )
-
-    # 立即结束当前 Python 进程
-    os._exit(0)
+    subprocess.Popen([bat_path], shell=True)
+    sys.exit()
 
 if __name__ == "__main__":
     pass
