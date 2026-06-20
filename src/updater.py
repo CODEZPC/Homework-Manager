@@ -9,7 +9,7 @@ import time
 import sys
 import main
 
-STATUS: Literal["None", "Connecting", "Needed", "Failed", "Downloading", "Completed"] = "None"
+STATUS: Literal["None", "Connecting", "Needed", "Failed", "Downloading", "Completed", "Latest"] = "None"
 UPDATE_NUM = None
 UPDATE_NAME = None
 UPDATE_VER = None
@@ -50,11 +50,11 @@ def check():
     if UPDATE_NUM > main.VERSION_NUM or DATA["TYPE"] == "Force":
         STATUS = "Needed"
     else:
-        STATUS = "None"
+        STATUS = "Latest"
 
 def response(event):
     global STATUS
-    if STATUS == "Failed":
+    if STATUS == "Failed" or STATUS == "Latest":
         threading.Thread(target=check).start()
     if STATUS == "Needed":
         STATUS = "Connecting"

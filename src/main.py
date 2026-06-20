@@ -28,8 +28,8 @@ from lang import *
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.2.1"
-VERSION_NUM = 1006002001
+VERSION = "1.6.2.2"
+VERSION_NUM = 1006002002
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -667,6 +667,10 @@ class HomeworkTool:
         elif updater.STATUS == "Connecting":
             self.ui_info_message.configure(
                 text=text("status.update.connecting"), fg="#FFFFFF", bg="#23272E"
+            )
+        elif updater.STATUS == "Latest":
+            self.ui_info_message.configure(
+                text=text("status.update.latest"), fg="#1AFF00", bg="#23272E"
             )
         elif updater.STATUS == "Needed":
             self.ui_info_message.configure(

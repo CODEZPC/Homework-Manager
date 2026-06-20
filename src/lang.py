@@ -15,6 +15,7 @@ DATA = {
         "status.update.connecting": "尝试连接至服务器……",
         "status.update.download": "下载更新中……",
         "status.update.find": "发现更新：",
+        "status.update.latest": "无需更新",
         "status.update.offline": "离线或未能连接到服务器",
         "status.update.restart": "重启以更新",
         "title": "作业管理器",
