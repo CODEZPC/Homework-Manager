@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006000000,
-  "VERSION": "1.6.0",
-  "NAME": "Auto Updater for Homework Manager",
-  "TYPE": "Functional"
+  "VERSION_NUM": 1006001000,
+  "VERSION": "1.6.1",
+  "NAME": "Subject Select",
+  "TYPE": "UI"
 }

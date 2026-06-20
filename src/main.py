@@ -25,8 +25,8 @@ import updater
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.0.1"
-VERSION_NUM = 1006000001
+VERSION = "1.6.1"
+VERSION_NUM = 1006001000
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -756,16 +756,48 @@ class HomeworkTool:
         Label(new_window, text="科目", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
             row=1, column=1
         )
-        subject_var = StringVar(new_window)
+
         if subject_index is not None and 0 <= subject_index < len(
             self.subject_display_names
         ):
-            subject_var.set(self.subject_display_names[subject_index])
+            subject_var = self.subject_display_names[subject_index]
         else:
-            subject_var.set(self.subject_display_names[0])
-        OptionMenu(new_window, subject_var, *self.subject_display_names).grid(
-            row=1, column=2
-        )
+            subject_var = self.subject_display_names[0]
+
+        def subject_change(index, objects):
+            nonlocal subject_var
+            subject_var = self.subject_display_names[index]
+            for btn in objects:
+                btn.configure(fg="#C8C8C8")
+            objects[index].configure(fg="#005EFF")
+
+        # TODO SUBJECT SELECT
+        subject_select_frame = Frame(new_window, relief=FLAT)
+        subject_select_frame.grid(row=1, column=2)
+
+        num = len(self.subject_display_names)
+        # 计算第一行放多少个（向上取整，保证第二行不会多于第一行）
+        row1_count = (num + 1) // 2
+
+        # 创建两个行容器
+        row1 = Frame(subject_select_frame)
+        row2 = Frame(subject_select_frame)
+        row1.pack()
+        row2.pack()
+
+        subject_select = []
+        for i in range(len(self.subject_display_names)):
+            # 根据 i 选择放在哪一行
+            parent = row1 if i < row1_count else row2
+            btn = Button(
+                parent,
+                text=self.subject_display_names[i],
+                command=lambda i=i, ss=subject_select: subject_change(i, ss),
+                relief=FLAT,
+                font=("HYWenHei-85W", 16),
+            )
+            btn.pack(side="left", expand=True)
+            subject_select.append(btn)
 
         Label(new_window, text="内容", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
             row=2, column=1
@@ -942,7 +974,7 @@ class HomeworkTool:
                 ):
                     new_window.attributes("-topmost", True)
                     return
-            new_subject_index = self.subject_display_names.index(subject_var.get())
+            new_subject_index = self.subject_display_names.index(subject_var)
             new_subject_key = self.subject_codes[new_subject_index]
             content = content_entry.get()
             deadline_str = time_entry.get()
