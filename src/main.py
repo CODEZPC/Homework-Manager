@@ -28,8 +28,8 @@ from lang import *
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.2.2"
-VERSION_NUM = 1006002002
+VERSION = "1.6.2.3"
+VERSION_NUM = 1006002003
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -108,10 +108,10 @@ class HomeworkTool:
         if self.tick > 2:
             try:
                 # 隐藏UI按钮
-                self.ui_top_exit.place_forget()
-                self.ui_top_add.place_forget()
-                self.ui_top_refresh.place_forget()
-                self.ui_top_clear.place_forget()
+                self.ui_top_exit.pack_forget()
+                self.ui_top_add.pack_forget()
+                self.ui_top_refresh.pack_forget()
+                self.ui_top_clear.pack_forget()
                 self.ui_side_delete.place_forget()
                 self.ui_side_edit.place_forget()
             except:

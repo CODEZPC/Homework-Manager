@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006002002,
-  "VERSION": "1.6.2.2",
-  "NAME": "状态更新",
-  "TYPE": "Additional"
+  "VERSION_NUM": 1006002003,
+  "VERSION": "1.6.2.3",
+  "NAME": "漏洞修复",
+  "TYPE": "Bugfix"
 }
