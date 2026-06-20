@@ -18,15 +18,18 @@ import sys
 import threading
 import time
 import msvcrt
+
 import help
 import homeworkfunc
 import updater
 
+from lang import *
+
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.1"
-VERSION_NUM = 1006001000
+VERSION = "1.6.2.1"
+VERSION_NUM = 1006002001
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -166,7 +169,9 @@ class HomeworkTool:
         self.list_canvas.place_forget()  # 隐藏 canvas，后续重新 place
         for i in self.time_list:
             i.place_forget()
-        a = Label(tk, text="正在加载...", fg=COLOR, font=("HYWenHei-85W", 24))
+        a = Label(
+            tk, text=text("homework.loading"), fg=COLOR, font=("HYWenHei-85W", 24)
+        )
         a.place(x=45, y=40)
         tk.update()  # 强制更新界面，确保之前的内容被隐藏
 
@@ -200,7 +205,6 @@ class HomeworkTool:
         # 先收集所有文本和状态
         all_items = []
         for i, subj in enumerate(self.subject_codes):
-            a.config(text=f"正在加载 - {self.subject_display_names[i]}...")
             for k in self.data[subj]:
                 content = self.subject_display_names[i] + ":" + k["content"]
                 status = homeworkfunc.analyze_time(k["time"], k["emphasize"])[1]
@@ -213,7 +217,7 @@ class HomeworkTool:
             x=45, y=40, width=canvas_width, height=tk.winfo_screenheight() - 60
         )
         inv = 35 if len(all_items) < 10 else 30
-        for idx, (text, status) in enumerate(all_items):
+        for idx, (txt, status) in enumerate(all_items):
             # Canvas 的原点位于屏幕 x=45,y=40，因此在 canvas 内坐标使用相对偏移
             y = idx * inv
             fill = "#C8C8C8"
@@ -221,10 +225,10 @@ class HomeworkTool:
                 fill = COLOR
             # 在 canvas 内使用 (0, y) 放置，anchor='nw' 以左上角对齐，保证与原来 place(x=45,y=40+...) 对齐
             item = self.list_canvas.create_text(
-                0, y, text=text, anchor="nw", fill=fill, font=("HYWenHei-85W", 18)
+                0, y, text=txt, anchor="nw", fill=fill, font=("HYWenHei-85W", 18)
             )
             self.canvas_items.append(item)
-            self.homework_list.append(text)
+            self.homework_list.append(txt)
             bbox = self.list_canvas.bbox(item)
             width = (bbox[2] - bbox[0]) if bbox else 0
             self.canvas_widths.append(width)
@@ -235,9 +239,9 @@ class HomeworkTool:
         a.place_forget()  # 隐藏加载提示
         del a  # 删除加载提示对象
 
-        self.cooldown(self.ui_top_add, "添加")
-        self.cooldown(self.ui_top_refresh, "刷新")
-        self.cooldown(self.ui_top_clear, "清空")
+        self.cooldown(self.ui_top_add, text("ui.top.add"))
+        self.cooldown(self.ui_top_refresh, text("ui.top.refresh"))
+        self.cooldown(self.ui_top_clear, text("ui.top.clear"))
 
         # 更新时间显示并计划下一次更新，启动 canvas 滚动
         self.upload_time_display()
@@ -418,7 +422,6 @@ class HomeworkTool:
         self.load_amount = max(0, int(load))
 
     def ui_pack(self):
-        self.ui_title.place_forget()
         self.ui_info_basic.place_forget()
         self.ui_info_time.place_forget()
         self.ui_info_homework.place_forget()
@@ -467,58 +470,49 @@ class HomeworkTool:
             + 10,
             y=tk.winfo_screenheight() - 25,
         )
-        if not homeworkfunc.ENABLE_CLASSISLAND:
-            self.ui_title.place(x=10, y=5)
 
     def load_ui(self):
-        tk.title("作业管理器")
+        tk.title(text("title"))
         tk.geometry("1280x720")
         tk.attributes("-fullscreen", True)  # ! Uncomment when release
         tk.config(bg="#23272E")
         tk.resizable(False, False)
 
         self.POSITION_TIME_DISPLAY_X = tk.winfo_screenwidth() - 205
-        self.POSITION_TOP_EXIT_X = tk.winfo_screenwidth() - 55
-        self.POSITION_TOP_REFRESH_X = tk.winfo_screenwidth() - 111
-        self.POSITION_TOP_ADD_X = tk.winfo_screenwidth() - 167
-        self.POSITION_TOP_CLEAR_X = tk.winfo_screenwidth() - 223
 
         # 左右遮罩（保留为实例变量，便于控制叠放顺序）
         self.mask_left = Frame(tk, width=45)
         self.mask_right = Frame(tk, width=17)
 
-        self.ui_title = Label(
-            tk,
-            text=f"Homework Manager - Today [VER {VERSION}]",
-            fg=COLOR,
-        )
+        self.top_frame = Frame(tk, relief=FLAT)
+        self.top_frame.place(x=0, y=0, relwidth=1)
         self.ui_top_exit = Button(
-            tk,
-            text="退出",
+            self.top_frame,
+            text=text("ui.top.exit"),
             fg=COLOR,
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
             command=self.exit,
         )
         self.ui_top_refresh = Button(
-            tk,
-            text="刷新",
+            self.top_frame,
+            text=text("ui.top.refresh"),
             fg=COLOR,
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
             command=self.draw_homework,
         )
         self.ui_top_add = Button(
-            tk,
-            text="新建",
+            self.top_frame,
+            text=text("ui.top.add"),
             fg=COLOR,
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
             command=self.new_homework,
         )
         self.ui_top_clear = Button(
-            tk,
-            text="清理",
+            self.top_frame,
+            text=text("ui.top.clear"),
             fg=COLOR,
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
@@ -595,7 +589,7 @@ class HomeworkTool:
             color_bg_basic = "#23272E"
 
         homework = len(self.homework_list)
-        text_homework = f"Homeworks: {homework:02d}/{self.HOMEWORK_LIMIT:02d}"
+        text_homework = f"{text("status.homework")}: {homework:02d}/{self.HOMEWORK_LIMIT:02d}"
         if homework > self.HOMEWORK_LIMIT + 5:
             if flash_tick // flash_homework % 2 != 0:
                 color_fg_homework = "#FFFFFF"
@@ -615,7 +609,7 @@ class HomeworkTool:
             color_fg_homework = COLOR
             color_bg_homework = "#23272E"
 
-        text_load = f"Loads: {self.load_amount}"
+        text_load = f"{text("status.load")}: {self.load_amount}"
         if self.load_amount > 200:
             if flash_tick // flash_load % 2 != 0:
                 color_fg_load = "#FFFFFF"
@@ -660,11 +654,11 @@ class HomeworkTool:
 
         if mouse:
             self.ui_info_mouse.config(
-                text=f"Mouse: ({self.mousex:04d}, {self.mousey:04d})",
+                text=f"{text("status.mouse")}: ({self.mousex:04d}, {self.mousey:04d})",
                 fg=COLOR,
             )
         else:
-            self.ui_info_mouse.config(text="Mouse: (====N/A====)", fg="#FFFF00")
+            self.ui_info_mouse.config(text=f"{text("status.mouse")}: (====N/A====)", fg="#FFFF00")
 
         self.ui_info_tick.config(text=f"Tick: {self.tick:03d}")
 
@@ -672,28 +666,28 @@ class HomeworkTool:
             self.ui_info_message.configure(text="", fg=COLOR, bg="#23272E")
         elif updater.STATUS == "Connecting":
             self.ui_info_message.configure(
-                text="Connecting...", fg="#FFFFFF", bg="#23272E"
+                text=text("status.update.connecting"), fg="#FFFFFF", bg="#23272E"
             )
         elif updater.STATUS == "Needed":
             self.ui_info_message.configure(
-                text=f"NEW UPDATE FOR {updater.UPDATE_NAME} ({updater.UPDATE_TYPE} | {updater.UPDATE_VER})",
+                text=f"{text("status.update.find")}{updater.UPDATE_NAME} ({updater.UPDATE_TYPE} | {updater.UPDATE_VER})",
                 fg="#FFFFFF",
                 bg="#005EFF",
             )
         elif updater.STATUS == "Downloading":
             self.ui_info_message.configure(
-                text=f"Downloading... ({updater.DOWNLOAD_PROCESS:.2f}% {updater.DOWNLOAD_SPEED / 1048576 :.2f}MB/s TOTAL:{updater.DOWNLOAD_SIZE / 1048576 :.1f}MB)",
+                text=f"{text("status.update.download")}({updater.DOWNLOAD_PROCESS:.2f}% {updater.DOWNLOAD_SPEED / 1048576 :.2f}MB/s | {updater.DOWNLOAD_SIZE / 1048576 :.1f}MB)",
                 fg="#FFFFFF",
                 bg="#005EFF",
             )
         elif updater.STATUS == "Completed":
             self.ui_info_message.configure(
-                text=f"Need restart",
+                text=text("status.update.restart"),
                 fg="#000000",
                 bg="#00FF40",
             )
         elif updater.STATUS == "Failed":
-            self.ui_info_message.configure(text=f"OFFLINE", fg="#FF0000", bg="#23272E")
+            self.ui_info_message.configure(text=text("status.update.offline"), fg="#FF0000", bg="#23272E")
 
         if ui_refresh == 60:
             ui_refresh = 0
@@ -727,10 +721,10 @@ class HomeworkTool:
                 with open(DATA, "w", encoding="utf-8") as f:
                     json.dump(self.data, f, ensure_ascii=False, indent=4)
                 messagebox.showinfo(
-                    "作业管理器·清理完成", f"已清理 {removed} 个已过期作业。"
+                    text("homework.clear.complete"), text("homework.clear.complete.desc") % (removed)
                 )
             else:
-                messagebox.showinfo("作业管理器·清理完成", "没有需要清理的作业。")
+                messagebox.showinfo(text("homework.clear.complete"), text("homework.clear.nothing"))
                 return
             self.draw_homework()
         except Exception as e:
@@ -763,6 +757,7 @@ class HomeworkTool:
             subject_var = self.subject_display_names[subject_index]
         else:
             subject_var = self.subject_display_names[0]
+            subject_index = 0
 
         def subject_change(index, objects):
             nonlocal subject_var
@@ -795,6 +790,7 @@ class HomeworkTool:
                 command=lambda i=i, ss=subject_select: subject_change(i, ss),
                 relief=FLAT,
                 font=("HYWenHei-85W", 16),
+                fg="#005EFF" if subject_index == i else "#C8C8C8"
             )
             btn.pack(side="left", expand=True)
             subject_select.append(btn)
@@ -1113,10 +1109,10 @@ class HomeworkTool:
             self.arg = -1
         # self.title.config(text=f"鼠标位置：({x}, {y}),{self.arg}")
 
-        self.ui_top_exit.place(x=self.POSITION_TOP_EXIT_X, y=0)
-        self.ui_top_refresh.place(x=self.POSITION_TOP_REFRESH_X, y=0)
-        self.ui_top_add.place(x=self.POSITION_TOP_ADD_X, y=0)
-        self.ui_top_clear.place(x=self.POSITION_TOP_CLEAR_X, y=0)
+        self.ui_top_exit.pack(side="right")
+        self.ui_top_refresh.pack(side="right")
+        self.ui_top_add.pack(side="right")
+        self.ui_top_clear.pack(side="right")
 
         if self.arg <= -1:
             self.ui_side_edit.place_forget()

@@ -54,6 +54,8 @@ def check():
 
 def response(event):
     global STATUS
+    if STATUS == "Failed":
+        threading.Thread(target=check).start()
     if STATUS == "Needed":
         STATUS = "Connecting"
         threading.Thread(target=download_update).start()
