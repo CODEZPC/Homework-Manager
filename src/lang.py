@@ -22,6 +22,7 @@ DATA = {
         "ui.top.add": "添加",
         "ui.top.clear": "清理",
         "ui.top.exit": "退出",
+        "ui.top.menu": "菜单",
         "ui.top.refresh": "刷新",
     }
 }

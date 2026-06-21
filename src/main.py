@@ -108,10 +108,7 @@ class HomeworkTool:
         if self.tick > 2:
             try:
                 # 隐藏UI按钮
-                self.ui_top_exit.pack_forget()
-                self.ui_top_add.pack_forget()
-                self.ui_top_refresh.pack_forget()
-                self.ui_top_clear.pack_forget()
+                self.top_frame.place_forget()
                 self.ui_side_delete.place_forget()
                 self.ui_side_edit.place_forget()
             except:
@@ -142,11 +139,7 @@ class HomeworkTool:
         if second <= 0:
             object.config(state=NORMAL, text=original, font=("汉仪文黑-85W", 14))
             return
-        object.config(
-            state=DISABLED,
-            text=f"{second / 10 if second <= 99 else second // 10}s",
-            font=("JetBrains Mono", 14),
-        )
+        object.config(state=DISABLED)
         tk.after(100, lambda: self.cooldown(object, original, second - 1))
 
     def draw_homework(self):
@@ -422,24 +415,13 @@ class HomeworkTool:
         self.load_amount = max(0, int(load))
 
     def ui_pack(self):
-        self.ui_info_basic.place_forget()
-        self.ui_info_time.place_forget()
-        self.ui_info_homework.place_forget()
-        self.ui_info_load.place_forget()
-        self.ui_info_mouse.place_forget()
-        self.ui_info_tick.place_forget()
+        self.info_frame.place_forget()
         self.mask_left.place_forget()
         self.mask_right.place_forget()
 
         self.mask_left.place(x=0, y=0, relheight=1)
         self.mask_right.place(x=tk.winfo_screenwidth() - 17, y=0, relheight=1)
-        self.ui_info_basic.pack(side="left")
-        self.ui_info_time.pack(side="left")
-        self.ui_info_homework.pack(side="left")
-        self.ui_info_load.pack(side="left")
-        self.ui_info_mouse.pack(side="left")
-        self.ui_info_tick.pack(side="left")
-        self.ui_info_message.pack(side="left")
+        self.info_frame.place(x=10, y=tk.winfo_screenheight() - 25)
 
     def load_ui(self):
         tk.title(text("title"))
@@ -448,14 +430,16 @@ class HomeworkTool:
         tk.config(bg="#23272E")
         tk.resizable(False, False)
 
+        self.main_frame = Frame(tk, relief=FLAT)
+        self.main_frame.place(x=0, y=0, relheight=1, relwidth=1)
+
         self.POSITION_TIME_DISPLAY_X = tk.winfo_screenwidth() - 205
 
         # 左右遮罩（保留为实例变量，便于控制叠放顺序）
-        self.mask_left = Frame(tk, width=45)
-        self.mask_right = Frame(tk, width=17)
+        self.mask_left = Frame(self.main_frame, width=45)
+        self.mask_right = Frame(self.main_frame, width=17)
 
-        self.top_frame = Frame(tk, relief=FLAT)
-        self.top_frame.place(x=0, y=0, relwidth=1)
+        self.top_frame = Frame(self.main_frame, relief=FLAT)
         self.ui_top_exit = Button(
             self.top_frame,
             text=text("ui.top.exit"),
@@ -488,6 +472,20 @@ class HomeworkTool:
             relief=FLAT,
             command=self.clear_homework,
         )
+        self.ui_top_menu = Button(
+            self.top_frame,
+            text=text("ui.top.menu"),
+            fg=COLOR,
+            font=("汉仪文黑-85W", 14),
+            relief=FLAT,
+            # command=,
+        )
+
+        self.ui_top_exit.pack(side="right")
+        self.ui_top_refresh.pack(side="right")
+        self.ui_top_add.pack(side="right")
+        self.ui_top_clear.pack(side="right")
+        self.ui_top_menu.pack(side="right")
 
         self.ui_side_delete = Button(
             tk, text="×", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
@@ -503,8 +501,7 @@ class HomeworkTool:
             x=45, y=40, width=canvas_width, height=tk.winfo_screenheight() - 60
         )
 
-        self.info_frame = Frame(tk, relief=FLAT)
-        self.info_frame.place(x=10, y=tk.winfo_screenheight() - 25)
+        self.info_frame = Frame(self.main_frame, relief=FLAT)
 
         self.ui_info_basic = Label(
             self.info_frame, text="", font=("JetBrains Mono", 9), fg=COLOR
@@ -527,6 +524,14 @@ class HomeworkTool:
         self.ui_info_message = Label(
             self.info_frame, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 自动更新
+
+        self.ui_info_basic.pack(side="left")
+        self.ui_info_time.pack(side="left")
+        self.ui_info_homework.pack(side="left")
+        self.ui_info_load.pack(side="left")
+        self.ui_info_mouse.pack(side="left")
+        self.ui_info_tick.pack(side="left")
+        self.ui_info_message.pack(side="left")
 
         self.ui_info_message.bind("<Button-1>", updater.response)
 
@@ -562,7 +567,9 @@ class HomeworkTool:
             color_bg_basic = "#23272E"
 
         homework = len(self.homework_list)
-        text_homework = f"{text("status.homework")}: {homework:02d}/{self.HOMEWORK_LIMIT:02d}"
+        text_homework = (
+            f"{text("status.homework")}: {homework:02d}/{self.HOMEWORK_LIMIT:02d}"
+        )
         if homework > self.HOMEWORK_LIMIT + 5:
             if flash_tick // flash_homework % 2 != 0:
                 color_fg_homework = "#FFFFFF"
@@ -631,7 +638,9 @@ class HomeworkTool:
                 fg=COLOR,
             )
         else:
-            self.ui_info_mouse.config(text=f"{text("status.mouse")}: (====N/A====)", fg="#FFFF00")
+            self.ui_info_mouse.config(
+                text=f"{text("status.mouse")}: (====N/A====)", fg="#FFFF00"
+            )
 
         self.ui_info_tick.config(text=f"Tick: {self.tick:03d}")
 
@@ -664,7 +673,9 @@ class HomeworkTool:
                 bg="#00FF40",
             )
         elif updater.STATUS == "Failed":
-            self.ui_info_message.configure(text=text("status.update.offline"), fg="#FF0000", bg="#23272E")
+            self.ui_info_message.configure(
+                text=text("status.update.offline"), fg="#FF0000", bg="#23272E"
+            )
 
         tk.after(33, lambda: self.info(flash_tick))
 
@@ -692,10 +703,13 @@ class HomeworkTool:
                 with open(DATA, "w", encoding="utf-8") as f:
                     json.dump(self.data, f, ensure_ascii=False, indent=4)
                 messagebox.showinfo(
-                    text("homework.clear.complete"), text("homework.clear.complete.desc") % (removed)
+                    text("homework.clear.complete"),
+                    text("homework.clear.complete.desc") % (removed),
                 )
             else:
-                messagebox.showinfo(text("homework.clear.complete"), text("homework.clear.nothing"))
+                messagebox.showinfo(
+                    text("homework.clear.complete"), text("homework.clear.nothing")
+                )
                 return
             self.draw_homework()
         except Exception as e:
@@ -761,7 +775,7 @@ class HomeworkTool:
                 command=lambda i=i, ss=subject_select: subject_change(i, ss),
                 relief=FLAT,
                 font=("HYWenHei-85W", 16),
-                fg="#005EFF" if subject_index == i else "#C8C8C8"
+                fg="#005EFF" if subject_index == i else "#C8C8C8",
             )
             btn.pack(side="left", expand=True)
             subject_select.append(btn)
@@ -1080,10 +1094,7 @@ class HomeworkTool:
             self.arg = -1
         # self.title.config(text=f"鼠标位置：({x}, {y}),{self.arg}")
 
-        self.ui_top_exit.pack(side="right")
-        self.ui_top_refresh.pack(side="right")
-        self.ui_top_add.pack(side="right")
-        self.ui_top_clear.pack(side="right")
+        self.top_frame.place(x=0, y=0, relwidth=1)
 
         if self.arg <= -1:
             self.ui_side_edit.place_forget()
