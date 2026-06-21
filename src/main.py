@@ -28,8 +28,8 @@ from lang import *
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.2.3"
-VERSION_NUM = 1006002003
+VERSION = "1.6.2.4"
+VERSION_NUM = 1006002004
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -433,43 +433,13 @@ class HomeworkTool:
 
         self.mask_left.place(x=0, y=0, relheight=1)
         self.mask_right.place(x=tk.winfo_screenwidth() - 17, y=0, relheight=1)
-        self.ui_info_basic.place(x=10, y=tk.winfo_screenheight() - 25)
-        self.ui_info_time.place(
-            x=homeworkfunc.getwidth(self.ui_info_basic, tk)
-            + self.ui_info_basic.winfo_x()
-            + 10,
-            y=tk.winfo_screenheight() - 25,
-        )
-        self.ui_info_homework.place(
-            x=homeworkfunc.getwidth(self.ui_info_time, tk)
-            + self.ui_info_time.winfo_x()
-            + 10,
-            y=tk.winfo_screenheight() - 25,
-        )
-        self.ui_info_load.place(
-            x=homeworkfunc.getwidth(self.ui_info_homework, tk)
-            + self.ui_info_homework.winfo_x()
-            + 10,
-            y=tk.winfo_screenheight() - 25,
-        )
-        self.ui_info_mouse.place(
-            x=homeworkfunc.getwidth(self.ui_info_load, tk)
-            + self.ui_info_load.winfo_x()
-            + 10,
-            y=tk.winfo_screenheight() - 25,
-        )
-        self.ui_info_tick.place(
-            x=homeworkfunc.getwidth(self.ui_info_mouse, tk)
-            + self.ui_info_mouse.winfo_x()
-            + 10,
-            y=tk.winfo_screenheight() - 25,
-        )
-        self.ui_info_message.place(
-            x=homeworkfunc.getwidth(self.ui_info_tick, tk)
-            + self.ui_info_tick.winfo_x()
-            + 10,
-            y=tk.winfo_screenheight() - 25,
-        )
+        self.ui_info_basic.pack(side="left")
+        self.ui_info_time.pack(side="left")
+        self.ui_info_homework.pack(side="left")
+        self.ui_info_load.pack(side="left")
+        self.ui_info_mouse.pack(side="left")
+        self.ui_info_tick.pack(side="left")
+        self.ui_info_message.pack(side="left")
 
     def load_ui(self):
         tk.title(text("title"))
@@ -533,33 +503,36 @@ class HomeworkTool:
             x=45, y=40, width=canvas_width, height=tk.winfo_screenheight() - 60
         )
 
+        self.info_frame = Frame(tk, relief=FLAT)
+        self.info_frame.place(x=10, y=tk.winfo_screenheight() - 25)
+
         self.ui_info_basic = Label(
-            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
+            self.info_frame, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 用于显示基本信息
         self.ui_info_time = Label(
-            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
+            self.info_frame, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 用于显示时间状态
         self.ui_info_homework = Label(
-            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
+            self.info_frame, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 用于显示作业数量
         self.ui_info_load = Label(
-            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
+            self.info_frame, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 用于显示负载
         self.ui_info_mouse = Label(
-            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
+            self.info_frame, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 用于显示鼠标位置
         self.ui_info_tick = Label(
-            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
+            self.info_frame, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 用于显示 tick 计数
         self.ui_info_message = Label(
-            tk, text="", font=("JetBrains Mono", 9), fg=COLOR
+            self.info_frame, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 自动更新
 
         self.ui_info_message.bind("<Button-1>", updater.response)
 
         homeworkfunc.uri_classisland("homeworkmode-on")
 
-    def info(self, flash_tick=0, ui_refresh=0):
+    def info(self, flash_tick=0):
 
         # 预处理与计时
         def is_foreground():
@@ -693,13 +666,7 @@ class HomeworkTool:
         elif updater.STATUS == "Failed":
             self.ui_info_message.configure(text=text("status.update.offline"), fg="#FF0000", bg="#23272E")
 
-        if ui_refresh == 60:
-            ui_refresh = 0
-            self.ui_pack()
-        else:
-            ui_refresh += 1
-
-        tk.after(33, lambda: self.info(flash_tick, ui_refresh))
+        tk.after(33, lambda: self.info(flash_tick))
 
     def clear_homework(self):
         # 清理所有“时间已过”的作业（时间戳非0且早于当前时间一定时间以前）
