@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006002008,
-  "VERSION": "1.6.2.8",
-  "NAME": "配置文件",
+  "VERSION_NUM": 1006002009,
+  "VERSION": "1.6.2.9",
+  "NAME": "UI优化，修复重启问题",
   "TYPE": "Config"
 }

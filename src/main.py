@@ -33,8 +33,8 @@ from lang import *
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.2.8"
-VERSION_NUM = 1006002008
+VERSION = "1.6.2.9"
+VERSION_NUM = 1006002009
 tk = None
 
 
@@ -59,9 +59,26 @@ def acquire_lock(lock_path=".\\lock\\homework.lock"):
     except PermissionError:
         return None
 
+def _app_dir() -> str:
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(os.path.abspath(sys.executable))
+    return os.path.dirname(os.path.abspath(__file__))
+
 def restart_service():
-    python = sys.executable # 获取当前Python解释器路径
-    os.execl(python, python, *sys.argv) # 使用当前命令行参数重新启动服务
+    app_dir = _app_dir()
+    current_exe_path = os.path.join(app_dir, "main.exe")
+    bat_path = os.path.join(app_dir, "update.bat")
+    with open(bat_path, "w", encoding="utf-8") as f:
+        f.write(f"""@echo off
+timeout /t 1 /nobreak >nul
+set _MEIPASS2=
+set PYINSTALLER_RESET_ENVIRONMENT=1
+start "" /D "{app_dir}" "{current_exe_path}"
+del /f /q "%~f0"
+""")
+
+    subprocess.Popen([bat_path], shell=True)
+    sys.exit()
 
 class HomeworkTool:
     def __init__(self):
@@ -172,7 +189,7 @@ class HomeworkTool:
         for i in self.time_list:
             i.place_forget()
         a = Label(
-            tk, text=text("homework.loading"), fg=COLOR, font=("HYWenHei-85W", 24)
+            self.main_frame, text=text("homework.loading"), fg=COLOR, font=("HYWenHei-85W", 24)
         )
         a.place(x=45, y=40)
         tk.update()  # 强制更新界面，确保之前的内容被隐藏
@@ -285,7 +302,7 @@ class HomeworkTool:
                 time_status = homeworkfunc.analyze_time(k["time"], k["emphasize"])
                 self.time_list.append(
                     Label(
-                        tk,
+                        self.main_frame,
                         text=time_status[0],
                         width=13,
                         justify="left",
@@ -497,14 +514,14 @@ class HomeworkTool:
         self.ui_top_menu.pack(side="right")
 
         self.ui_side_delete = Button(
-            tk, text="×", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
+            self.main_frame, text="×", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
         )
         self.ui_side_edit = Button(
-            tk, text="E", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
+            self.main_frame, text="E", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
         )
 
         # 创建用于显示作业列表的 Canvas（替代多个 Label）
-        self.list_canvas = Canvas(tk, bg="#23272E", highlightthickness=0)
+        self.list_canvas = Canvas(self.main_frame, bg="#23272E", highlightthickness=0)
         canvas_width = self.POSITION_TIME_DISPLAY_X - 50
         self.list_canvas.place(
             x=45, y=40, width=canvas_width, height=tk.winfo_screenheight() - 60
