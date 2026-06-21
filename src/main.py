@@ -21,6 +21,7 @@ import msvcrt
 
 import help
 import homeworkfunc
+import menu
 import updater
 
 from lang import *
@@ -28,8 +29,9 @@ from lang import *
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.2.4"
-VERSION_NUM = 1006002004
+VERSION = "1.6.2.6"
+VERSION_NUM = 1006002006
+tk = None
 
 
 def acquire_lock(lock_path=".\\lock\\homework.lock"):
@@ -478,7 +480,7 @@ class HomeworkTool:
             fg=COLOR,
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
-            # command=,
+            command=menu.open_menu,
         )
 
         self.ui_top_exit.pack(side="right")

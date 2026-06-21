@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006002003,
-  "VERSION": "1.6.2.3",
-  "NAME": "漏洞修复",
-  "TYPE": "Bugfix"
+  "VERSION_NUM": 1006002006,
+  "VERSION": "1.6.2.6",
+  "NAME": "UI优化与菜单引入",
+  "TYPE": "UI & Additional"
 }

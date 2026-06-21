@@ -9,6 +9,7 @@ DATA = {
         "homework.clear.complete.desc": "已清理 %d 个已过期作业。",
         "homework.clear.nothing": "没有需要清理的作业。",
         "homework.loading": "正在加载……",
+        "menu.exit": "退出菜单",
         "status.homework": "作业数",
         "status.load": "负载",
         "status.mouse": "鼠标",
