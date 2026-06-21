@@ -5,6 +5,7 @@ import json
 import main
 from lang import *
 
+
 class Menu:
     def __init__(self):
         self.load_menu()
@@ -24,7 +25,7 @@ class Menu:
             relief=FLAT,
             command=self.exit,
         )
-        
+
         self.close_menu.pack(side="right")
 
         self.language_frame = Frame(self.menu_frame, relief=FLAT)
@@ -48,22 +49,30 @@ class Menu:
         )
         self.lang_cn.pack(side="left")
         self.lang_en.pack(side="left")
-    
+
     def change(self, key, value, restart=False):
         with open("setting.json", "r") as f:
             data = json.load(f)
         data[key] = value
         with open("setting.json", "w") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
-    
+        if restart:
+            messagebox.showinfo(
+                "重启 | RESTART",
+                "重启以应用更改\nRestart to Apply",
+            )
+            main.restart_service()
+
     def exit(self):
         self.menu_frame.place_forget()
+
 
 def open_menu():
     global tk, COLOR
     tk = main.tk
     COLOR = main.COLOR
     menu = Menu()
+
 
 if __name__ == "__main__":
     pass

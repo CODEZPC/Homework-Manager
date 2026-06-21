@@ -33,8 +33,8 @@ from lang import *
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.2.7"
-VERSION_NUM = 1006002007
+VERSION = "1.6.2.8"
+VERSION_NUM = 1006002008
 tk = None
 
 

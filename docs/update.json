@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006002007,
-  "VERSION": "1.6.2.7",
-  "NAME": "语言支持更新，配置文件加入",
-  "TYPE": "Lang & Additional"
+  "VERSION_NUM": 1006002008,
+  "VERSION": "1.6.2.8",
+  "NAME": "配置文件",
+  "TYPE": "Config"
 }
