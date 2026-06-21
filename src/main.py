@@ -430,7 +430,7 @@ class HomeworkTool:
 
         self.mask_left.place(x=0, y=0, relheight=1)
         self.mask_right.place(x=tk.winfo_screenwidth() - 17, y=0, relheight=1)
-        self.info_frame.place(x=10, y=tk.winfo_screenheight() - 25)
+        self.info_frame.place(x=10, y=tk.winfo_screenheight() - 20)
 
     def load_ui(self):
         tk.title(text("title"))
