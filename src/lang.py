@@ -1,13 +1,34 @@
 from typing import *
+import json
 import main
 
 LANG: Literal["zh-CN","en-US"]= "zh-CN"
 
+with open("setting.json", "r") as f:
+    LANG = json.load(f)["Language"]
+
 DATA = {
     "zh-CN":{
+        "homework.add.cancel": "取消",
+        "homework.add.context": "内容",
+        "homework.add.emphasize": "优先级",
+        "homework.add.endtime": "截止时间",
+        "homework.add.endtime.aftertomorrow": "后天",
+        "homework.add.endtime.daya": "-1天",
+        "homework.add.endtime.dayb": "+1天",
+        "homework.add.endtime.noneed": "不收",
+        "homework.add.endtime.today": "今天",
+        "homework.add.endtime.tomorrow": "明天",
+        "homework.add.help": "使用手册",
+        "homework.add.submit": "提交",
+        "homework.add.warning.outlimit": "作业管理器·超过上限",
+        "homework.add.warning.outlimit.desc": "作业数量已达上限，是否强制添加？",
+        "homework.add.subject": "科目",
+        "homework.add.title": "作业管理器·新建作业",
         "homework.clear.complete": "作业管理器·清理完成",
-        "homework.clear.complete.desc": "已清理 %d 个已过期作业。",
+        "homework.clear.complete.desc": "已清理 %d 个作业。",
         "homework.clear.nothing": "没有需要清理的作业。",
+        "homework.error": "作业管理器·错误",
         "homework.loading": "正在加载……",
         "menu.exit": "退出菜单",
         "status.homework": "作业数",
@@ -25,8 +46,50 @@ DATA = {
         "ui.top.exit": "退出",
         "ui.top.menu": "菜单",
         "ui.top.refresh": "刷新",
+    },
+    "en-US":{
+        "homework.add.cancel": "Cancel",
+        "homework.add.context": "Context",
+        "homework.add.emphasize": "Emphasize",
+        "homework.add.endtime": "END Time",
+        "homework.add.endtime.aftertomorrow": "DAT",
+        "homework.add.endtime.daya": "-1D",
+        "homework.add.endtime.dayb": "+1D",
+        "homework.add.endtime.noneed": "Non",
+        "homework.add.endtime.today": "Today",
+        "homework.add.endtime.tomorrow": "TMR",
+        "homework.add.help": "User Manual",
+        "homework.add.submit": "SUBMIT",
+        "homework.add.warning.outlimit": "Homework Manager - Out of Limit",
+        "homework.add.warning.outlimit.desc": "The number of homeworks has reached the limit. Do you want to force add it?",
+        "homework.add.subject": "Subject",
+        "homework.add.title": "Homework Manager - Add Homework",
+        "homework.clear.complete": "Homework Manager - Clear Complete",
+        "homework.clear.complete.desc": "Cleared %d homework(s).",
+        "homework.clear.nothing": "There's no homework to clean up.",
+        "homework.error": "Homework Manager - ERROR",
+        "homework.loading": "Loading...",
+        "menu.exit": "Exit MENU",
+        "status.homework": "Homework(s)",
+        "status.load": "Loads",
+        "status.mouse": "Mouse",
+        "status.update.connecting": "Trying to connect to the server...",
+        "status.update.download": "Downloading Update",
+        "status.update.find": "Update found:",
+        "status.update.latest": "No need to update",
+        "status.update.offline": "Offline or failed to connect to the server",
+        "status.update.restart": "Need Restart",
+        "title": "Homework Manager",
+        "ui.top.add": "Add",
+        "ui.top.clear": "Clear",
+        "ui.top.exit": "Exit",
+        "ui.top.menu": "Menu",
+        "ui.top.refresh": "Reload",
     }
 }
 
 def text(key):
-    return DATA[LANG][key]
+    try:
+        return DATA[LANG][key]
+    except KeyError:
+        return DATA["zh-CN"][key]

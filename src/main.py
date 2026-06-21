@@ -19,6 +19,10 @@ import threading
 import time
 import msvcrt
 
+import default_json
+
+default_json.check()
+
 import help
 import homeworkfunc
 import menu
@@ -29,8 +33,8 @@ from lang import *
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.2.6"
-VERSION_NUM = 1006002006
+VERSION = "1.6.2.7"
+VERSION_NUM = 1006002007
 tk = None
 
 
@@ -55,6 +59,9 @@ def acquire_lock(lock_path=".\\lock\\homework.lock"):
     except PermissionError:
         return None
 
+def restart_service():
+    python = sys.executable # 获取当前Python解释器路径
+    os.execl(python, python, *sys.argv) # 使用当前命令行参数重新启动服务
 
 class HomeworkTool:
     def __init__(self):
@@ -684,38 +691,35 @@ class HomeworkTool:
     def clear_homework(self):
         # 清理所有“时间已过”的作业（时间戳非0且早于当前时间一定时间以前）
         removed = 0
-        try:
-            for key in self.subject_codes:
-                new_list = []
-                for item in self.data.get(key, []):
+        for key in self.subject_codes:
+            new_list = []
+            for item in self.data.get(key, []):
+                try:
+                    t = int(item.get("time", 0))
+                except Exception:
                     try:
-                        t = int(item.get("time", 0))
+                        t = float(item.get("time", 0))
                     except Exception:
-                        try:
-                            t = float(item.get("time", 0))
-                        except Exception:
-                            t = 0
-                    # 时间为0表示不收，跳过；过期规则：比当前时间早超过一定时间视为已过
-                    if t != 0 and t < time.time() - homeworkfunc.TIME_OUT:
-                        removed += 1
-                    else:
-                        new_list.append(item)
-                self.data[key] = new_list
-            if removed > 0:
-                with open(DATA, "w", encoding="utf-8") as f:
-                    json.dump(self.data, f, ensure_ascii=False, indent=4)
-                messagebox.showinfo(
-                    text("homework.clear.complete"),
-                    text("homework.clear.complete.desc") % (removed),
-                )
-            else:
-                messagebox.showinfo(
-                    text("homework.clear.complete"), text("homework.clear.nothing")
-                )
-                return
-            self.draw_homework()
-        except Exception as e:
-            messagebox.showerror("作业管理器·错误", f"清理作业时发生错误：{e}")
+                        t = 0
+                # 时间为0表示不收，跳过；过期规则：比当前时间早超过一定时间视为已过
+                if t != 0 and t < time.time() - homeworkfunc.TIME_OUT:
+                    removed += 1
+                else:
+                    new_list.append(item)
+            self.data[key] = new_list
+        if removed > 0:
+            with open(DATA, "w", encoding="utf-8") as f:
+                json.dump(self.data, f, ensure_ascii=False, indent=4)
+            messagebox.showinfo(
+                text("homework.clear.complete"),
+                text("homework.clear.complete.desc") % (removed),
+            )
+        else:
+            messagebox.showinfo(
+                text("homework.clear.complete"), text("homework.clear.nothing")
+            )
+            return
+        self.draw_homework()
 
     def new_homework(
         self,
@@ -726,7 +730,7 @@ class HomeworkTool:
         replace_target=None,
     ):
         new_window = Toplevel(tk)
-        new_window.title("作业管理器·新建作业")
+        new_window.title(text("homework.add.title"))
         new_window.config(bg="#23272E")
         new_window.resizable(False, False)
         new_window.attributes("-topmost", True)
@@ -734,7 +738,7 @@ class HomeworkTool:
         Label(new_window, text=" ").grid(row=0, column=0)
         Label(new_window, text=" ").grid(row=999, column=999)
 
-        Label(new_window, text="科目", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
+        Label(new_window, text=text("homework.add.subject"), bg="#23272E", font=("HYWenHei-85W", 16)).grid(
             row=1, column=1
         )
 
@@ -782,7 +786,7 @@ class HomeworkTool:
             btn.pack(side="left", expand=True)
             subject_select.append(btn)
 
-        Label(new_window, text="内容", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
+        Label(new_window, text=text("homework.add.context"), bg="#23272E", font=("HYWenHei-85W", 16)).grid(
             row=2, column=1
         )
         content_entry = Entry(
@@ -793,7 +797,7 @@ class HomeworkTool:
             content_entry.insert(0, content_text)
 
         Label(
-            new_window, text="  截止时间  ", bg="#23272E", font=("HYWenHei-85W", 16)
+            new_window, text=text("homework.add.endtime"), bg="#23272E", font=("HYWenHei-85W", 16)
         ).grid(row=3, column=1, rowspan=2)
 
         # * 重要：时间解析位
@@ -828,7 +832,7 @@ class HomeworkTool:
         time_select.append(
             Button(
                 time_select_frame,
-                text="不收",
+                text=text("homework.add.endtime.noneed"),
                 command=lambda: time_entry.configure(
                     textvariable=StringVar(
                         time_select_frame,
@@ -842,7 +846,7 @@ class HomeworkTool:
         time_select.append(
             Button(
                 time_select_frame,
-                text="-1天",
+                text=text("homework.add.endtime.daya"),
                 command=lambda: time_entry.configure(
                     textvariable=StringVar(
                         time_select_frame,
@@ -864,7 +868,7 @@ class HomeworkTool:
         time_select.append(
             Button(
                 time_select_frame,
-                text="今天",
+                text=text("homework.add.endtime.today"),
                 command=lambda: time_entry.configure(
                     textvariable=StringVar(
                         time_select_frame,
@@ -880,7 +884,7 @@ class HomeworkTool:
         time_select.append(
             Button(
                 time_select_frame,
-                text="明天",
+                text=text("homework.add.endtime.tomorrow"),
                 command=lambda: time_entry.configure(
                     textvariable=StringVar(
                         time_select_frame,
@@ -896,7 +900,7 @@ class HomeworkTool:
         time_select.append(
             Button(
                 time_select_frame,
-                text="后天",
+                text=text("homework.add.endtime.aftertomorrow"),
                 command=lambda: time_entry.configure(
                     textvariable=StringVar(
                         time_select_frame,
@@ -912,7 +916,7 @@ class HomeworkTool:
         time_select.append(
             Button(
                 time_select_frame,
-                text="+1天",
+                text=text("homework.add.endtime.dayb"),
                 command=lambda: time_entry.configure(
                     textvariable=StringVar(
                         time_select_frame,
@@ -935,7 +939,7 @@ class HomeworkTool:
         for i in time_select:
             i.pack(side="left", expand=True)
 
-        Label(new_window, text="优先级", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
+        Label(new_window, text=text("homework.add.emphasize"), bg="#23272E", font=("HYWenHei-85W", 16)).grid(
             row=5, column=1
         )
         emphasize_var = StringVar(new_window)
@@ -953,7 +957,7 @@ class HomeworkTool:
             if len(self.homework_list) >= self.HOMEWORK_LIMIT and not replace_target:
                 new_window.attributes("-topmost", False)
                 if not messagebox.askyesno(
-                    "作业管理器·超过上限", "作业数量已达上限，是否强制添加？"
+                    text("homework.add.warning.outlimit"), text("homework.add.warning.outlimit.desc")
                 ):
                     new_window.attributes("-topmost", True)
                     return
@@ -1018,21 +1022,21 @@ class HomeworkTool:
 
         Button(
             new_window,
-            text="提交",
+            text=text("homework.add.submit"),
             command=submit,
             relief=FLAT,
             font=("HYWenHei-85W", 16),
         ).grid(row=6, column=2, sticky="e")
         Button(
             new_window,
-            text="取消",
+            text=text("homework.add.cancel"),
             command=new_window.destroy,
             relief=FLAT,
             font=("HYWenHei-85W", 16),
         ).grid(row=6, column=2, sticky="w")
         Button(
             new_window,
-            text="使用手册",
+            text=text("homework.add.help"),
             command=show_help,
             relief=FLAT,
             font=("HYWenHei-85W", 16),
@@ -1133,6 +1137,7 @@ def main():
     app = HomeworkTool()
 
     thread = threading.Thread(target=updater.check)
+    thread.daemon = True
     thread.start()
 
     tk.mainloop()

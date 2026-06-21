@@ -55,10 +55,14 @@ def check():
 def response(event):
     global STATUS
     if STATUS == "Failed" or STATUS == "Latest":
-        threading.Thread(target=check).start()
+        thread = threading.Thread(target=check)
+        thread.daemon = True
+        thread.start()
     if STATUS == "Needed":
         STATUS = "Connecting"
-        threading.Thread(target=download_update).start()
+        thread = threading.Thread(target=download_update)
+        thread.daemon = True
+        thread.start()
     if STATUS == "Completed":
         restart()
 
