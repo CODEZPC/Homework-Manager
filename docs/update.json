@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006002011,
-  "VERSION": "1.6.2.11",
-  "NAME": "删除多语言，添加自定义科目",
-  "TYPE": "Lang & Config"
+  "VERSION_NUM": 1006002012,
+  "VERSION": "1.6.2.12",
+  "NAME": "配置文件修复逻辑修复",
+  "TYPE": "Config Bugfix"
 }

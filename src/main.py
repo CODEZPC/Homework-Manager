@@ -31,8 +31,8 @@ import updater
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.2.11"
-VERSION_NUM = 1006002011
+VERSION = "1.6.2.12"
+VERSION_NUM = 1006002012
 tk = None
 
 
