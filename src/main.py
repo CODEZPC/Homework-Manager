@@ -33,8 +33,8 @@ from lang import *
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.2.9"
-VERSION_NUM = 1006002009
+VERSION = "1.6.2.10"
+VERSION_NUM = 1006002010
 tk = None
 
 
@@ -1069,7 +1069,7 @@ class HomeworkTool:
         new_window.geometry(f"+{x}+{y}")
 
     def delete_homework(self, index):
-        if not messagebox.askyesno("作业管理器·提示", "确定要删除吗？"):
+        if not messagebox.askyesno(text("homework.del.title"), text("homework.del.desc")):
             return
         count = 0
         for i in self.subject_codes:
@@ -1144,7 +1144,7 @@ def main():
         # 无法获取锁，提示用户程序已在运行
         tmp_root = Tk()
         tmp_root.withdraw()
-        messagebox.showwarning("作业管理器·提示", "程序已在运行，无法启动多个实例。")
+        messagebox.showwarning("错误", "程序已在运行，无法启动多个实例。")
         tmp_root.destroy()
         sys.exit(0)
 

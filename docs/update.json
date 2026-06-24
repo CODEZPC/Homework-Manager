@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006002009,
-  "VERSION": "1.6.2.9",
-  "NAME": "UI优化，修复重启问题",
-  "TYPE": "Config"
+  "VERSION_NUM": 1006002010,
+  "VERSION": "1.6.2.10",
+  "NAME": "语言文件补充",
+  "TYPE": "Lang"
 }
