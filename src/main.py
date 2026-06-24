@@ -28,13 +28,11 @@ import homeworkfunc
 import menu
 import updater
 
-from lang import *
-
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.2.10"
-VERSION_NUM = 1006002010
+VERSION = "1.6.2.11"
+VERSION_NUM = 1006002011
 tk = None
 
 
@@ -189,7 +187,7 @@ class HomeworkTool:
         for i in self.time_list:
             i.place_forget()
         a = Label(
-            self.main_frame, text=text("homework.loading"), fg=COLOR, font=("HYWenHei-85W", 24)
+            self.main_frame, text="正在加载……", fg=COLOR, font=("HYWenHei-85W", 24)
         )
         a.place(x=45, y=40)
         tk.update()  # 强制更新界面，确保之前的内容被隐藏
@@ -258,9 +256,9 @@ class HomeworkTool:
         a.place_forget()  # 隐藏加载提示
         del a  # 删除加载提示对象
 
-        self.cooldown(self.ui_top_add, text("ui.top.add"))
-        self.cooldown(self.ui_top_refresh, text("ui.top.refresh"))
-        self.cooldown(self.ui_top_clear, text("ui.top.clear"))
+        self.cooldown(self.ui_top_add, "添加")
+        self.cooldown(self.ui_top_refresh, "刷新")
+        self.cooldown(self.ui_top_clear, "清理")
 
         # 更新时间显示并计划下一次更新，启动 canvas 滚动
         self.upload_time_display()
@@ -450,7 +448,7 @@ class HomeworkTool:
         self.info_frame.place(x=10, y=tk.winfo_screenheight() - 20)
 
     def load_ui(self):
-        tk.title(text("title"))
+        tk.title("作业管理器")
         tk.geometry("1280x720")
         tk.attributes("-fullscreen", True)  # ! Uncomment when release
         tk.config(bg="#23272E")
@@ -468,7 +466,7 @@ class HomeworkTool:
         self.top_frame = Frame(self.main_frame, relief=FLAT)
         self.ui_top_exit = Button(
             self.top_frame,
-            text=text("ui.top.exit"),
+            text="退出",
             fg=COLOR,
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
@@ -476,7 +474,7 @@ class HomeworkTool:
         )
         self.ui_top_refresh = Button(
             self.top_frame,
-            text=text("ui.top.refresh"),
+            text="刷新",
             fg=COLOR,
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
@@ -484,7 +482,7 @@ class HomeworkTool:
         )
         self.ui_top_add = Button(
             self.top_frame,
-            text=text("ui.top.add"),
+            text="添加",
             fg=COLOR,
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
@@ -492,7 +490,7 @@ class HomeworkTool:
         )
         self.ui_top_clear = Button(
             self.top_frame,
-            text=text("ui.top.clear"),
+            text="清理",
             fg=COLOR,
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
@@ -500,7 +498,7 @@ class HomeworkTool:
         )
         self.ui_top_menu = Button(
             self.top_frame,
-            text=text("ui.top.menu"),
+            text="菜单",
             fg=COLOR,
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
@@ -594,7 +592,7 @@ class HomeworkTool:
 
         homework = len(self.homework_list)
         text_homework = (
-            f"{text("status.homework")}: {homework:02d}/{self.HOMEWORK_LIMIT:02d}"
+            f"作业数: {homework:02d}/{self.HOMEWORK_LIMIT:02d}"
         )
         if homework > self.HOMEWORK_LIMIT + 5:
             if flash_tick // flash_homework % 2 != 0:
@@ -615,7 +613,7 @@ class HomeworkTool:
             color_fg_homework = COLOR
             color_bg_homework = "#23272E"
 
-        text_load = f"{text("status.load")}: {self.load_amount}"
+        text_load = f"负载: {self.load_amount}"
         if self.load_amount > 200:
             if flash_tick // flash_load % 2 != 0:
                 color_fg_load = "#FFFFFF"
@@ -660,12 +658,12 @@ class HomeworkTool:
 
         if mouse:
             self.ui_info_mouse.config(
-                text=f"{text("status.mouse")}: ({self.mousex:04d}, {self.mousey:04d})",
+                text=f"鼠标: ({self.mousex:04d}, {self.mousey:04d})",
                 fg=COLOR,
             )
         else:
             self.ui_info_mouse.config(
-                text=f"{text("status.mouse")}: (====N/A====)", fg="#FFFF00"
+                text=f"鼠标: (====N/A====)", fg="#FFFF00"
             )
 
         self.ui_info_tick.config(text=f"Tick: {self.tick:03d}")
@@ -674,33 +672,33 @@ class HomeworkTool:
             self.ui_info_message.configure(text="", fg=COLOR, bg="#23272E")
         elif updater.STATUS == "Connecting":
             self.ui_info_message.configure(
-                text=text("status.update.connecting"), fg="#FFFFFF", bg="#23272E"
+                text="尝试连接至服务器……", fg="#FFFFFF", bg="#23272E"
             )
         elif updater.STATUS == "Latest":
             self.ui_info_message.configure(
-                text=text("status.update.latest"), fg="#1AFF00", bg="#23272E"
+                text="无需更新", fg="#1AFF00", bg="#23272E"
             )
         elif updater.STATUS == "Needed":
             self.ui_info_message.configure(
-                text=f"{text("status.update.find")}{updater.UPDATE_NAME} ({updater.UPDATE_TYPE} | {updater.UPDATE_VER})",
+                text=f"发现更新：{updater.UPDATE_NAME} ({updater.UPDATE_TYPE} | {updater.UPDATE_VER})",
                 fg="#FFFFFF",
                 bg="#005EFF",
             )
         elif updater.STATUS == "Downloading":
             self.ui_info_message.configure(
-                text=f"{text("status.update.download")}({updater.DOWNLOAD_PROCESS:.2f}% {updater.DOWNLOAD_SPEED / 1048576 :.2f}MB/s | {updater.DOWNLOAD_SIZE / 1048576 :.1f}MB)",
+                text=f"下载更新中……({updater.DOWNLOAD_PROCESS:.2f}% {updater.DOWNLOAD_SPEED / 1048576 :.2f}MB/s | {updater.DOWNLOAD_SIZE / 1048576 :.1f}MB)",
                 fg="#FFFFFF",
                 bg="#005EFF",
             )
         elif updater.STATUS == "Completed":
             self.ui_info_message.configure(
-                text=text("status.update.restart"),
+                text="重启以更新",
                 fg="#000000",
                 bg="#00FF40",
             )
         elif updater.STATUS == "Failed":
             self.ui_info_message.configure(
-                text=text("status.update.offline"), fg="#FF0000", bg="#23272E"
+                text="离线或未能连接到服务器", fg="#FF0000", bg="#23272E"
             )
 
         tk.after(33, lambda: self.info(flash_tick))
@@ -728,12 +726,12 @@ class HomeworkTool:
             with open(DATA, "w", encoding="utf-8") as f:
                 json.dump(self.data, f, ensure_ascii=False, indent=4)
             messagebox.showinfo(
-                text("homework.clear.complete"),
-                text("homework.clear.complete.desc") % (removed),
+                "作业管理器·清理完成",
+                "已清理 %d 个作业。" % (removed),
             )
         else:
             messagebox.showinfo(
-                text("homework.clear.complete"), text("homework.clear.nothing")
+                "作业管理器·清理完成", "没有需要清理的作业。"
             )
             return
         self.draw_homework()
@@ -747,7 +745,7 @@ class HomeworkTool:
         replace_target=None,
     ):
         new_window = Toplevel(tk)
-        new_window.title(text("homework.add.title"))
+        new_window.title("作业管理器·新建作业")
         new_window.config(bg="#23272E")
         new_window.resizable(False, False)
         new_window.attributes("-topmost", True)
@@ -755,7 +753,7 @@ class HomeworkTool:
         Label(new_window, text=" ").grid(row=0, column=0)
         Label(new_window, text=" ").grid(row=999, column=999)
 
-        Label(new_window, text=text("homework.add.subject"), bg="#23272E", font=("HYWenHei-85W", 16)).grid(
+        Label(new_window, text="科目", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
             row=1, column=1
         )
 
@@ -803,7 +801,7 @@ class HomeworkTool:
             btn.pack(side="left", expand=True)
             subject_select.append(btn)
 
-        Label(new_window, text=text("homework.add.context"), bg="#23272E", font=("HYWenHei-85W", 16)).grid(
+        Label(new_window, text="内容", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
             row=2, column=1
         )
         content_entry = Entry(
@@ -814,7 +812,7 @@ class HomeworkTool:
             content_entry.insert(0, content_text)
 
         Label(
-            new_window, text=text("homework.add.endtime"), bg="#23272E", font=("HYWenHei-85W", 16)
+            new_window, text="截止时间", bg="#23272E", font=("HYWenHei-85W", 16)
         ).grid(row=3, column=1, rowspan=2)
 
         # * 重要：时间解析位
@@ -849,7 +847,7 @@ class HomeworkTool:
         time_select.append(
             Button(
                 time_select_frame,
-                text=text("homework.add.endtime.noneed"),
+                text="不收",
                 command=lambda: time_entry.configure(
                     textvariable=StringVar(
                         time_select_frame,
@@ -863,7 +861,7 @@ class HomeworkTool:
         time_select.append(
             Button(
                 time_select_frame,
-                text=text("homework.add.endtime.daya"),
+                text="-1天",
                 command=lambda: time_entry.configure(
                     textvariable=StringVar(
                         time_select_frame,
@@ -885,7 +883,7 @@ class HomeworkTool:
         time_select.append(
             Button(
                 time_select_frame,
-                text=text("homework.add.endtime.today"),
+                text="今天",
                 command=lambda: time_entry.configure(
                     textvariable=StringVar(
                         time_select_frame,
@@ -901,7 +899,7 @@ class HomeworkTool:
         time_select.append(
             Button(
                 time_select_frame,
-                text=text("homework.add.endtime.tomorrow"),
+                text="明天",
                 command=lambda: time_entry.configure(
                     textvariable=StringVar(
                         time_select_frame,
@@ -917,7 +915,7 @@ class HomeworkTool:
         time_select.append(
             Button(
                 time_select_frame,
-                text=text("homework.add.endtime.aftertomorrow"),
+                text="后天",
                 command=lambda: time_entry.configure(
                     textvariable=StringVar(
                         time_select_frame,
@@ -933,7 +931,7 @@ class HomeworkTool:
         time_select.append(
             Button(
                 time_select_frame,
-                text=text("homework.add.endtime.dayb"),
+                text="+1天",
                 command=lambda: time_entry.configure(
                     textvariable=StringVar(
                         time_select_frame,
@@ -956,7 +954,7 @@ class HomeworkTool:
         for i in time_select:
             i.pack(side="left", expand=True)
 
-        Label(new_window, text=text("homework.add.emphasize"), bg="#23272E", font=("HYWenHei-85W", 16)).grid(
+        Label(new_window, text="优先级", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
             row=5, column=1
         )
         emphasize_var = StringVar(new_window)
@@ -974,7 +972,7 @@ class HomeworkTool:
             if len(self.homework_list) >= self.HOMEWORK_LIMIT and not replace_target:
                 new_window.attributes("-topmost", False)
                 if not messagebox.askyesno(
-                    text("homework.add.warning.outlimit"), text("homework.add.warning.outlimit.desc")
+                    "作业管理器·超过上限", "作业数量已达上限，是否强制添加？"
                 ):
                     new_window.attributes("-topmost", True)
                     return
@@ -1039,21 +1037,21 @@ class HomeworkTool:
 
         Button(
             new_window,
-            text=text("homework.add.submit"),
+            text="提交",
             command=submit,
             relief=FLAT,
             font=("HYWenHei-85W", 16),
         ).grid(row=6, column=2, sticky="e")
         Button(
             new_window,
-            text=text("homework.add.cancel"),
+            text="取消",
             command=new_window.destroy,
             relief=FLAT,
             font=("HYWenHei-85W", 16),
         ).grid(row=6, column=2, sticky="w")
         Button(
             new_window,
-            text=text("homework.add.help"),
+            text="使用手册",
             command=show_help,
             relief=FLAT,
             font=("HYWenHei-85W", 16),
@@ -1069,7 +1067,7 @@ class HomeworkTool:
         new_window.geometry(f"+{x}+{y}")
 
     def delete_homework(self, index):
-        if not messagebox.askyesno(text("homework.del.title"), text("homework.del.desc")):
+        if not messagebox.askyesno("作业管理器·删除提示", "确定要删除吗？"):
             return
         count = 0
         for i in self.subject_codes:

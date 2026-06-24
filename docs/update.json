@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006002010,
-  "VERSION": "1.6.2.10",
-  "NAME": "语言文件补充",
-  "TYPE": "Lang"
+  "VERSION_NUM": 1006002011,
+  "VERSION": "1.6.2.11",
+  "NAME": "删除多语言，添加自定义科目",
+  "TYPE": "Lang & Config"
 }

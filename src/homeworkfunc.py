@@ -35,6 +35,24 @@ SUBJECT_DISPLAY_NAMES = [
     "其他",
 ]
 
+
+def load_subjects():
+    """从 setting.json 动态加载科目配置，失败则回退到硬编码默认值。"""
+    global SUBJECT_CODES, SUBJECT_DISPLAY_NAMES
+    try:
+        with open("setting.json", "r", encoding="utf-8") as f:
+            settings = json.load(f)
+        subjects = settings.get("Subjects", None)
+        if subjects and isinstance(subjects, dict) and len(subjects) > 0:
+            SUBJECT_CODES = list(subjects.values())
+            SUBJECT_DISPLAY_NAMES = list(subjects.keys())
+    except Exception:
+        pass  # 回退到上方硬编码默认值
+
+
+# 模块导入时自动加载
+load_subjects()
+
 EMPHASIZE_LEVELS = ["自动", "很低", "低", "标准", "高"]
 
 ENABLE_CLASSISLAND = False
