@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006002012,
-  "VERSION": "1.6.2.12",
-  "NAME": "配置文件修复逻辑修复",
-  "TYPE": "Config Bugfix"
+  "VERSION_NUM": 1006002013,
+  "VERSION": "1.6.2.13",
+  "NAME": "使用手册更新",
+  "TYPE": "User"
 }
