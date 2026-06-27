@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006002013,
-  "VERSION": "1.6.2.13",
-  "NAME": "使用手册更新",
-  "TYPE": "User"
+  "VERSION_NUM": 1006002014,
+  "VERSION": "1.6.2.14",
+  "NAME": "自动修复更新",
+  "TYPE": "Bugfix"
 }
