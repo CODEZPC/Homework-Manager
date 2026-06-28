@@ -277,7 +277,7 @@ class Menu:
 
         # ── 科目管理标题 ──
         subject_title_frame = Frame(self.menu_frame, relief=FLAT)
-        subject_title_frame.place(x=20, y=20)
+        subject_title_frame.place(x=20, y=30)
 
         Label(
             subject_title_frame,
@@ -324,7 +324,7 @@ class Menu:
             ]
         )
         list_frame = Frame(self.menu_frame, relief=FLAT)
-        list_frame.place(x=20, y=60, width=380, height=300)
+        list_frame.place(x=20, y=70, width=380, height=300)
 
         scrollbar = ttk.Scrollbar(list_frame, style="Custom.Vertical.TScrollbar")
         scrollbar.pack(side=RIGHT, fill=Y)
@@ -347,7 +347,7 @@ class Menu:
 
         # ── 操作按钮（5键一行，宽度与列表对齐） ──
         action_frame = Frame(self.menu_frame, relief=FLAT, width=380, height=40)
-        action_frame.place(x=20, y=370)
+        action_frame.place(x=20, y=380)
         action_frame.pack_propagate(False)
 
         btn_style = {

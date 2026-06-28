@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006002014,
-  "VERSION": "1.6.2.14",
-  "NAME": "自动修复更新",
-  "TYPE": "Bugfix"
+  "VERSION_NUM": 1006002015,
+  "VERSION": "1.6.2.15",
+  "NAME": "手册嵌入",
+  "TYPE": "Additional"
 }
