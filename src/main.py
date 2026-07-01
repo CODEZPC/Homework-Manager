@@ -31,8 +31,8 @@ import updater
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.2.13"
-VERSION_NUM = 1006002013
+VERSION = "1.6.2.15"
+VERSION_NUM = 1006002015
 tk = None
 
 
@@ -170,7 +170,6 @@ class HomeworkTool:
         """显示作业列表"""
 
         self.ui_top_add.config(state=DISABLED)
-        self.ui_top_refresh.config(state=DISABLED)
         self.ui_top_clear.config(state=DISABLED)
 
         # 取消之前计划的提醒（如果有）
@@ -195,6 +194,36 @@ class HomeworkTool:
         # 重新加载数据
         with open(DATA, "r", encoding="utf-8") as f:
             self.data = json.load(f)
+
+        # 验证并修复数据：处理多余的/缺失的科目键
+        _data_fixed = False
+        # 找出多余键（存在于 JSON 但不在 subject_codes 中，且值为列表）
+        known_keys = set(self.subject_codes)
+        extra_keys = [
+            k for k in self.data
+            if k not in known_keys and isinstance(self.data[k], list)
+        ]
+        if extra_keys:
+            messagebox.showwarning(
+                "作业管理器·数据警告",
+                f"homework.json 中包含未配置的科目键：{', '.join(extra_keys)}，"
+                f"已自动忽略。\n如需使用，请在设置中添加对应科目。"
+            )
+            for k in extra_keys:
+                del self.data[k]
+            _data_fixed = True
+        # 找出缺失键（存在于 subject_codes 但不在 JSON 中）
+        missing_keys = [k for k in self.subject_codes if k not in self.data]
+        if missing_keys:
+            for k in missing_keys:
+                self.data[k] = []
+            _data_fixed = True
+        if _data_fixed:
+            try:
+                with open(DATA, "w", encoding="utf-8") as f:
+                    json.dump(self.data, f, ensure_ascii=False, indent=4)
+            except Exception:
+                pass
 
         # 对每个 subject 列表应用稳定排序，若发生变化则写回文件一次
         _changed = False
@@ -257,7 +286,6 @@ class HomeworkTool:
         del a  # 删除加载提示对象
 
         self.cooldown(self.ui_top_add, "添加")
-        self.cooldown(self.ui_top_refresh, "刷新")
         self.cooldown(self.ui_top_clear, "清理")
 
         # 更新时间显示并计划下一次更新，启动 canvas 滚动
@@ -471,14 +499,7 @@ class HomeworkTool:
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
             command=self.exit,
-        )
-        self.ui_top_refresh = Button(
-            self.top_frame,
-            text="刷新",
-            fg=COLOR,
-            font=("汉仪文黑-85W", 14),
-            relief=FLAT,
-            command=self.draw_homework,
+            width=3,
         )
         self.ui_top_add = Button(
             self.top_frame,
@@ -487,6 +508,7 @@ class HomeworkTool:
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
             command=self.new_homework,
+            width=3,
         )
         self.ui_top_clear = Button(
             self.top_frame,
@@ -495,6 +517,16 @@ class HomeworkTool:
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
             command=self.clear_homework,
+            width=3,
+        )
+        self.ui_top_help = Button(
+            self.top_frame,
+            text="帮助",
+            fg=COLOR,
+            font=("汉仪文黑-85W", 14),
+            relief=FLAT,
+            command=lambda: help.open_help(tk.winfo_screenwidth(), tk.winfo_screenheight()),
+            width=3,
         )
         self.ui_top_menu = Button(
             self.top_frame,
@@ -503,12 +535,14 @@ class HomeworkTool:
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
             command=menu.open_menu,
+            width=3,
         )
+        
 
         self.ui_top_exit.pack(side="right")
-        self.ui_top_refresh.pack(side="right")
         self.ui_top_add.pack(side="right")
         self.ui_top_clear.pack(side="right")
+        self.ui_top_help.pack(side="right")
         self.ui_top_menu.pack(side="right")
 
         self.ui_side_delete = Button(
@@ -583,7 +617,7 @@ class HomeworkTool:
         if not is_foreground() and flash_tick // flash_background % 2 != 0:
             text_basic = f"   Background    {VERSION}"
             color_fg_basic = "#FFFFFF"
-            color_bg_basic = "#0000FF"
+            color_bg_basic = "#005EFF"
         else:
             # COMMON
             text_basic = f"Homework Manager {VERSION}"
@@ -1032,9 +1066,6 @@ class HomeworkTool:
             self.draw_homework()
             new_window.destroy()
 
-        def show_help():
-            helper = help.Help()
-
         Button(
             new_window,
             text="提交",
@@ -1049,13 +1080,6 @@ class HomeworkTool:
             relief=FLAT,
             font=("HYWenHei-85W", 16),
         ).grid(row=6, column=2, sticky="w")
-        Button(
-            new_window,
-            text="使用手册",
-            command=show_help,
-            relief=FLAT,
-            font=("HYWenHei-85W", 16),
-        ).grid(row=6, column=2, sticky="s")
         # 将窗口居中偏下显示（不改变窗口大小）
         new_window.update_idletasks()
         sw = new_window.winfo_screenwidth()
@@ -1150,7 +1174,6 @@ def main():
     global tk
     tk = Tk()
     app = HomeworkTool()
-    hp = help.Help()
 
     thread = threading.Thread(target=updater.check)
     thread.daemon = True

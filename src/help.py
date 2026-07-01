@@ -3,7 +3,7 @@ import main
 
 HELP = [
     {
-        "概述": f"作业管理器·使用手册 V{main.VERSION}\n选择左侧选项以查看详细信息。\n\n也可在作业添加/修改面板中再次打开本手册。",
+        "概述": f"作业管理器·使用手册 V{main.VERSION}\n选择左侧选项以查看详细信息。"
     },
     {
         "添加与修改": [
@@ -15,11 +15,11 @@ HELP = [
                 "时间与自定义信息": "作业时间与自定义信息\n\n时间与自定义信息共用输入框，一次仅能展示一项。\n输入框允许输入作业截止时间，格式为 YYYY/MM/DD HH:MM ，输入完成后会自动转换为相对时间显示在主界面作业列表中，输入0将自动解析为暂时不收，也可点击下方按钮快速设置。\n同时，允许输入任意文本内容，内容将直接显示在主界面作业列表中，适合用于输入一些额外的说明或备注信息。\n\n当输入内容无法解析为有效时间时，将默认视为自定义信息进行显示。\n\n显示样例如下（默认情况下，超时时间是5分钟）：\n当前时间在设置时间的超时时间之后 -> 时间已过\n当前时间在设置时间之后，在设置时间的超时时间之前 -> 现在收\n当前时间在设置时间之前，但剩余时间小于超时时间 -> 即将收\n当前时间在设置时间之前，且时间在今天 -> HH:MM收\n当前时间在设置时间之前，且时间在明天 -> 明天HH:MM收\n当前时间在设置时间之前，且时间在后天 -> 后天HH:MM收\n当前时间在设置时间之前，且时间在本周内 -> 周XHH:MM收\n当前时间在设置时间之前，且时间在下周内 -> 下周XHH:MM收\n当前时间在设置时间之前，且时间在下周外 -> YYYY/MM/DD收\n",
             },
             {
-                "优先级与显示": "作业优先级与时间显示样式\n\n优先级及其对应的显示方式如下：\n极低：作业置灰，时间/自定义内容置灰\n低：作业正常显示，时间/自定义内容置灰\n标准：作业正常显示，时间/自定义内容正常显示\n高：作业正常显示，时间/自定义内容变为白底黑字显示\n\n当作业存在提交时间时，若为\"现在收\"/\"时间已过\"，则优先级设置无效化，变为默认显示模式（即优先级为\"自动\"）\n若为自定义信息，则默认为标准\n\n自动优先级的解析如下：\n时间已过 -> 极低\n现在收 -> 高\n即将收/HH:MM收/明天HH:MM收 -> 标准\n后天HH:MM收/周XHH:MM收/下周XHH:MM收/YYYY/MM/DD收 -> 低\n",
+                "优先级与显示": '作业优先级与时间显示样式\n\n优先级及其对应的显示方式如下：\n极低：作业置灰，时间/自定义内容置灰\n低：作业正常显示，时间/自定义内容置灰\n标准：作业正常显示，时间/自定义内容正常显示\n高：作业正常显示，时间/自定义内容变为白底黑字显示\n\n当作业存在提交时间时，若为"现在收"/"时间已过"，则优先级设置无效化，变为默认显示模式（即优先级为"自动"）\n若为自定义信息，则默认为标准\n\n自动优先级的解析如下：\n时间已过 -> 极低\n现在收 -> 高\n即将收/HH:MM收/明天HH:MM收 -> 标准\n后天HH:MM收/周XHH:MM收/下周XHH:MM收/YYYY/MM/DD收 -> 低\n',
             },
             {
                 "作业显示顺序": "作业显示顺序\n\n作业列表的排序规则由 homeworkfunc._sort_key 函数决定，按以下优先级排列：\n\n1. 优先级数值（由 analyze_time 计算得出）降序排列——即优先级高的作业排在前面\n2. 若优先级相同，则按截止时间升序排列——即截止时间近的排在前面\n3. 若时间和优先级均相同，按文本字符串顺序排列\n\n优先级数值对应关系（由 analyze_time 返回）：\n- 时间已过 → -1（置底显示）\n- 不收 / 自定义文本 → 0 或按手动设定的优先级\n- 低优先级 → 0\n- 标准优先级 → 1\n- 即将收 → 1\n- 高优先级 → 3\n- 现在收 → 3 或 4（置顶显示）\n\n注意：每次刷新列表时都会重新排序，但相同键的作业会保持原始相对顺序（稳定排序）。",
-            }
+            },
         ]
     },
     {
@@ -43,8 +43,8 @@ HELP = [
                 "调整顺序": "调整顺序\n\n在列表中选中一个科目后，可通过【上移】和【下移】按钮调整该科目在列表中的位置，此顺序决定了主界面作业列表中科目的显示顺序。",
             },
             {
-                "配置文件": "配置文件\n\n科目定义存储在程序目录下的 setting.json 文件中，格式如下：\n\n{\n    \"Subjects\": {\n        \"语文 \": \"C\",\n        \"数学 \": \"M\",\n        \"英语 \": \"E\",\n        ...\n    }\n}\n\nSubjects 字典的键为科目显示名称，值为科目代码。\n\n初始配置由 default_json.py 自动生成。若 homework.json 已存在有效数据，首次启动时会从中提取科目键作为默认配置。\n\n若科目管理面板中标记了「需要重启」，关闭菜单时会询问是否立即重启以应用更改。也可通过 homeworkfunc.load_subjects() 在程序启动时动态加载配置。",
-            }
+                "配置文件": '配置文件\n\n科目定义存储在程序目录下的 setting.json 文件中，格式如下：\n\n{\n    "Subjects": {\n        "语文 ": "C",\n        "数学 ": "M",\n        "英语 ": "E",\n        ...\n    }\n}\n\nSubjects 字典的键为科目显示名称，值为科目代码。\n\n初始配置由 default_json.py 自动生成。若 homework.json 已存在有效数据，首次启动时会从中提取科目键作为默认配置。\n\n若科目管理面板中标记了「需要重启」，关闭菜单时会询问是否立即重启以应用更改。也可通过 homeworkfunc.load_subjects() 在程序启动时动态加载配置。',
+            },
         ]
     },
     {
@@ -54,28 +54,28 @@ HELP = [
                 "顶部按钮栏": "顶部按钮栏\n\n鼠标移动到屏幕顶部时显示，包含以下按钮：\n\n- 退出：关闭程序并调用 ClassIsland 的 Homeworkmode-off 通知\n- 刷新：重新加载 homework.json 数据并刷新显示\n- 添加：打开作业添加面板\n- 清理：批量移除所有已过期的作业\n- 菜单：打开科目管理面板\n\n所有操作按钮在点击后会短暂禁用（约 0.5 秒），以防止重复点击导致的数据异常。",
             },
             {
-                "底部信息栏": "底部信息栏\n\n位于屏幕左下角，从左到右依次显示：\n\n1. 基本信息：显示 \"Homework Manager\" 及当前版本号。若窗口不在前台，则高亮显示「Background」提示。\n\n2. 当前时间：格式为 YYYY-MM-DD HH:MM:SS，每秒更新。\n\n3. 作业数量：显示当前作业数/最大作业数限制。超过限制时以黄色/红色闪烁警告。\n\n4. 负载：界面的渲染负载估算值，详见 负载。\n\n5. 鼠标坐标：当前鼠标在窗口内的位置 (X, Y)。若 mouse 库不可用则显示 N/A。\n\n6. Tick：当前的 Tick 计数值。\n\n7. 更新状态：自动更新的状态信息，单击可触发更新操作（检查/下载/重启）。",
+                "底部信息栏": '底部信息栏\n\n位于屏幕左下角，从左到右依次显示：\n\n1. 基本信息：显示 "Homework Manager" 及当前版本号。若窗口不在前台，则高亮显示「Background」提示。\n\n2. 当前时间：格式为 YYYY-MM-DD HH:MM:SS，每秒更新。\n\n3. 作业数量：显示当前作业数/最大作业数限制。超过限制时以黄色/红色闪烁警告。\n\n4. 负载：界面的渲染负载估算值，详见 负载。\n\n5. 鼠标坐标：当前鼠标在窗口内的位置 (X, Y)。若 mouse 库不可用则显示 N/A。\n\n6. Tick：当前的 Tick 计数值。\n\n7. 更新状态：自动更新的状态信息，单击可触发更新操作（检查/下载/重启）。',
             },
             {
                 "按钮冷却机制": "按钮冷却机制\n\n为防止用户重复点击导致数据异常，程序为关键按钮实现了冷却（cooldown）机制，通过 cooldown() 方法实现：\n\n- 按钮被点击后立即进入 DISABLED 状态\n- 冷却时长为 0.5 秒（每 0.1 秒递减 1，共 5 个周期）\n- 冷却结束后按钮恢复 NORMAL 状态，可再次点击\n\n受保护的按钮包括：【添加】【刷新】【清理】。",
             },
             {
                 "进程锁机制": "进程锁机制\n\n程序启动时通过 acquire_lock() 函数尝试获取文件锁（位于 lock/homework.lock），以防止同一程序被多次启动。\n\n实现原理：使用 msvcrt.locking 对锁文件加排他锁。若获取失败（如锁文件已被其他实例占用），则弹出提示框告知用户「程序已在运行」，并退出当前实例。\n\n程序正常退出时，锁文件会自动释放。",
-            }
+            },
         ]
     },
     {
         "存储与数据版本": [
             "存储与数据版本\n\n程序的数据和配置分别存储在 homework.json 和 setting.json 两个文件中，均采用 UTF-8 编码的 JSON 格式。",
             {
-                "数据文件结构": "数据文件（homework.json）结构\n\n{\n    \"VER\": 2,                  // 数据版本号，用于数据迁移\n    \"C\": [                      // 科目代码为键\n        {                       // 每个作业为一个对象\n            \"content\": \"作业内容\",\n            \"time\": 1762560000,  // Unix 时间戳（秒），0=不收，字符串=自定义信息\n            \"emphasize\": \"自动\"   // 优先级：自动/很低/低/标准/高\n        }\n    ],\n    \"M\": [],\n    ...\n}\n\n注意：time 字段可以是整数时间戳，也可以是任意文本字符串，后者会直接作为自定义信息显示。",
+                "数据文件结构": '数据文件（homework.json）结构\n\n{\n    "VER": 2,                  // 数据版本号，用于数据迁移\n    "C": [                      // 科目代码为键\n        {                       // 每个作业为一个对象\n            "content": "作业内容",\n            "time": 1762560000,  // Unix 时间戳（秒），0=不收，字符串=自定义信息\n            "emphasize": "自动"   // 优先级：自动/很低/低/标准/高\n        }\n    ],\n    "M": [],\n    ...\n}\n\n注意：time 字段可以是整数时间戳，也可以是任意文本字符串，后者会直接作为自定义信息显示。',
             },
             {
-                "配置文件结构": "配置文件（setting.json）结构\n\n{\n    \"Subjects\": {              // 科目定义\n        \"语文 \": \"C\",\n        \"数学 \": \"M\",\n        ...\n    }\n}\n\nSubjects 字典的键为科目显示名称，值为科目代码。可通过菜单面板中的科目管理功能进行修改。若文件不存在或缺少 Subjects 项，default_json.py 会在程序启动时自动生成。",
+                "配置文件结构": '配置文件（setting.json）结构\n\n{\n    "Subjects": {              // 科目定义\n        "语文 ": "C",\n        "数学 ": "M",\n        ...\n    }\n}\n\nSubjects 字典的键为科目显示名称，值为科目代码。可通过菜单面板中的科目管理功能进行修改。若文件不存在或缺少 Subjects 项，default_json.py 会在程序启动时自动生成。',
             },
             {
-                "数据迁移": "数据迁移\n\n当 homework.json 中的 VER 字段小于当前程序所需的版本号时，dataupdate.py 会在程序启动时自动执行数据格式升级：\n\n- 版本 0→1：为所有作业添加 emphasize（优先级）字段，默认值为 \"Standard\"\n- 版本 1→2：将旧优先级名称（Ignored/Unimportant/Standard/Urgent）转换为新名称（很低/低/标准/高）\n\n数据迁移为自动过程，无需用户手动干预。",
-            }
+                "数据迁移": '数据迁移\n\n当 homework.json 中的 VER 字段小于当前程序所需的版本号时，dataupdate.py 会在程序启动时自动执行数据格式升级：\n\n- 版本 0→1：为所有作业添加 emphasize（优先级）字段，默认值为 "Standard"\n- 版本 1→2：将旧优先级名称（Ignored/Unimportant/Standard/Urgent）转换为新名称（很低/低/标准/高）\n\n数据迁移为自动过程，无需用户手动干预。',
+            },
         ]
     },
     {
@@ -106,53 +106,65 @@ HELP = [
             },
             {
                 "重启机制": "重启机制\n\n程序支持多种场景下的自动重启：\n\n1. 更新后重启：新版本下载完成后，程序会：\n   - 在 update 目录下保存新的 main.exe\n   - 生成 update.bat 批处理文件\n   - 批处理等待 2 秒后，用新文件覆盖当前 exe，删除 update 目录，启动新版本\n   - 当前进程立即退出\n\n2. 科目修改后重启：在科目管理面板中修改科目后，退出菜单时可选择立即重启以应用更改。\n\n3. 手动重启：通过 restart_service() 函数可触发与更新后相同的重启流程，重新执行当前 exe。\n\n重启批处理脚本会自动清理自身（删除 update.bat），不留残留文件。",
-            }
+            },
         ],
-    }
+    },
 ]
 
 
 class Help:
-    def __init__(self):
-        global tk, window_width, window_height
-        tk = Tk()
-        window_width = tk.winfo_screenwidth()
-        window_height = tk.winfo_screenheight()
-        tk.title("作业管理器·使用手册")
-        tk.geometry(
-            f"{int(window_width * 0.8)}x{int(window_height * 0.8)}+{int(window_width * 0.1)}+{int(window_height * 0.1)}"
-        )
-        tk.resizable(False, False)
-        tk.attributes("-topmost", True)
+    def __init__(self, window_width, window_height):
+        self.window_width = window_width
+        self.window_height = window_height
 
-        tk.config(bg="#23272E")
-        tk.option_add("*Background", "#23272E")
-        tk.option_add("*Foreground", "#C8C8C8")
-        tk.option_add("*Font", ("HYWenHei-85W", 12))
+        # 创建嵌入主窗口的 Frame（覆盖整个窗口）
+        self.help_frame = Frame(tk, bg="#23272E", relief=FLAT)
+        self.help_frame.place(x=0, y=0, relheight=1, relwidth=1)
+        
+        # 顶部关闭栏
+        top_bar = Frame(self.help_frame, bg="#23272E", relief=FLAT)
+        top_bar.place(x=0, y=0, relwidth=1)
+
+        close_btn = Button(
+            top_bar,
+            text="退出手册",
+            fg=COLOR,
+            font=("汉仪文黑-85W", 14),
+            relief=FLAT,
+            command=self.exit,
+        )
+        close_btn.pack(side="right")
+
         self.load_help()
 
     def load_help(self):
         self.content = Listbox(
-            tk,
+            self.help_frame,
             highlightthickness=0,
-            borderwidth=1,
-            relief=RIDGE,
+            borderwidth=0,
+            relief=FLAT,
             selectbackground="#23272E",
             selectforeground="#7AA4FF",
             selectmode=SINGLE,
+            bg="#1C1F25",
+            fg="#C8C8C8",
+            font=("HYWenHei-85W", 12),
         )
-        self.content.place(x=0, y=0, relheight=1, relwidth=0.18)
+        self.content.place(x=0, y=40, relheight=1, relwidth=0.18, height=-40)
         self.detail = Label(
-            tk,
+            self.help_frame,
             highlightthickness=0,
-            borderwidth=1,
-            relief=RIDGE,
+            borderwidth=0,
+            relief=FLAT,
             anchor="nw",
             justify=LEFT,
-            wraplength=window_width * 0.8 * 0.81,
+            wraplength=self.window_width * 0.81,
+            bg="#23272E",
+            fg="#C8C8C8",
+            font=("HYWenHei-85W", 12),
         )
         self.detail.place(
-            x=int(window_width * 0.8 * 0.18), y=0, relheight=1, relwidth=0.82
+            x=int(self.window_width * 0.18), y=40, relheight=1, relwidth=0.82, height=-40
         )
 
         # build a tree representation from CONFIG
@@ -264,7 +276,11 @@ class Help:
             t = tuple(path)
             if t in self.expanded_paths:
                 # collapse: remove this path and any descendant expansions
-                self.expanded_paths = {p for p in self.expanded_paths if not (len(p) >= len(t) and p[: len(t)] == t)}
+                self.expanded_paths = {
+                    p
+                    for p in self.expanded_paths
+                    if not (len(p) >= len(t) and p[: len(t)] == t)
+                }
             else:
                 # expand: add this path
                 self.expanded_paths.add(t)
@@ -291,7 +307,19 @@ class Help:
         self.content.see(new_idx)
         self._suspend_events = False
 
+    def exit(self):
+        """隐藏帮助面板。"""
+        self.help_frame.place_forget()
+
+
+def open_help(window_width, window_height):
+    """供外部调用的入口函数，创建嵌入主窗口的帮助面板。"""
+    global tk, COLOR
+    tk = main.tk
+    COLOR = main.COLOR
+
+    help_instance = Help(window_width, window_height)
+
 
 if __name__ == "__main__":
-    app = Help()
-    tk.mainloop()
+    pass
