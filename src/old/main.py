@@ -482,6 +482,11 @@ class HomeworkTool:
         tk.config(bg="#23272E")
         tk.resizable(False, False)
 
+        try:
+            tk.iconbitmap("HM.ico")
+        except:
+            pass
+
         self.main_frame = Frame(tk, relief=FLAT)
         self.main_frame.place(x=0, y=0, relheight=1, relwidth=1)
 
