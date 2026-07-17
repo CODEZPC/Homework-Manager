@@ -3,7 +3,7 @@
 main.spec
 /src/lock
 *-backup.*
-/__pycache__
+__pycache__
 /lock
 main.exe
 homework.json

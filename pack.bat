@@ -1,6 +1,6 @@
-pack.exe -F -w .\src\main.py
-MOVE dist\main.exe docs\main.exe
+pack.exe -F -w .\src\new\app.py
+MOVE dist\app.exe docs\main.exe
 RMDIR dist /s /q
 RMDIR build /s /q
-DEL main.spec
+DEL app.spec
 pause
