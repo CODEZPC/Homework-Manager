@@ -4,7 +4,7 @@ from tkinter import ttk
 import json
 import os
 
-import main
+import old.main as main
 
 
 class Menu:

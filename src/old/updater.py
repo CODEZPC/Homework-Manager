@@ -7,7 +7,7 @@ import tempfile
 import threading
 import time
 import sys
-import main
+import old.main as main
 
 STATUS: Literal["None", "Connecting", "Needed", "Failed", "Downloading", "Completed", "Latest"] = "None"
 UPDATE_NUM = None

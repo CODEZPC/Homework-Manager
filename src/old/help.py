@@ -1,5 +1,5 @@
 from tkinter import *
-import main
+import old.main as main
 
 HELP = [
     {

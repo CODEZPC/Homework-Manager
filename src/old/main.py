@@ -19,14 +19,14 @@ import threading
 import time
 import msvcrt
 
-import default_json
+import old.default_json as default_json
 
 default_json.check()
 
-import help
-import homeworkfunc
-import menu
-import updater
+import old.help as help
+import old.homeworkfunc as homeworkfunc
+import old.menu as menu
+import old.updater as updater
 
 COLOR = "#767F89"
 DEBUG = False
