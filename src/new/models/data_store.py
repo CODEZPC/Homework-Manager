@@ -17,6 +17,7 @@ class DataStore:
 
     def __init__(self):
         self._lock = threading.Lock()
+        self._loglayer = "Data"
 
     # ──────────────── homework.json ────────────────
 
@@ -47,13 +48,15 @@ class DataStore:
             return items
         return []
 
-    def set_subject_items(self, data: Dict[str, Any], subject_code: str,
-                          items: List[Dict]) -> None:
+    def set_subject_items(
+        self, data: Dict[str, Any], subject_code: str, items: List[Dict]
+    ) -> None:
         """设置某科目的作业列表。"""
         data[subject_code] = items
 
-    def validate_and_fix_keys(self, data: Dict[str, Any],
-                               valid_codes: List[str]) -> Tuple[Dict, List[str], List[str]]:
+    def validate_and_fix_keys(
+        self, data: Dict[str, Any], valid_codes: List[str]
+    ) -> Tuple[Dict, List[str], List[str]]:
         """
         验证并修复 data 中的科目键：
         - 移除不在 valid_codes 中的多余键（仅当值为列表时）
@@ -62,8 +65,7 @@ class DataStore:
         返回: (修复后的 data, 多余键列表, 缺失键列表)
         """
         extra_keys = [
-            k for k in data
-            if k not in valid_codes and isinstance(data.get(k), list)
+            k for k in data if k not in valid_codes and isinstance(data.get(k), list)
         ]
         for k in extra_keys:
             del data[k]
@@ -106,8 +108,9 @@ class DataStore:
         if subjects and isinstance(subjects, dict) and len(subjects) > 0:
             return subjects
         # 回退到硬编码默认值
-        return dict(zip(config.DEFAULT_SUBJECT_DISPLAY_NAMES,
-                        config.DEFAULT_SUBJECT_CODES))
+        return dict(
+            zip(config.DEFAULT_SUBJECT_DISPLAY_NAMES, config.DEFAULT_SUBJECT_CODES)
+        )
 
     def save_subjects(self, subjects: Dict[str, str]) -> bool:
         """将科目映射表写入 setting.json。"""

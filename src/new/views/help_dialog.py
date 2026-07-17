@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import config
 
-
 # ──────────────── 帮助内容数据 ────────────────
 
 VERSION_STR = config.VERSION  # 将在运行时由 app.py 注入更新
@@ -20,9 +19,7 @@ def build_help_data(version: str) -> List[Dict]:
     """构建帮助文档数据结构。"""
     v = version
     return [
-        {
-            "概述": f"作业管理器·使用手册 V{v}\n选择左侧选项以查看详细信息。"
-        },
+        {"概述": f"作业管理器·使用手册 V{v}\n选择左侧选项以查看详细信息。"},
         {
             "添加与修改": [
                 f"作业添加与修改\n\n作业添加/修改面板可通过如下方式打开：\n\n"
@@ -73,8 +70,8 @@ def build_help_data(version: str) -> List[Dict]:
                         "低：作业正常显示，时间/自定义内容置灰\n"
                         "标准：作业正常显示，时间/自定义内容正常显示\n"
                         "高：作业正常显示，时间/自定义内容变为白底黑字显示\n\n"
-                        "当作业存在提交时间时，若为\"现在收\"/\"时间已过\"，"
-                        "则优先级设置无效化，变为默认显示模式（即优先级为\"自动\"）\n"
+                        '当作业存在提交时间时，若为"现在收"/"时间已过"，'
+                        '则优先级设置无效化，变为默认显示模式（即优先级为"自动"）\n'
                         "若为自定义信息，则默认为标准\n\n"
                         "自动优先级的解析如下：\n"
                         "时间已过 -> 极低\n现在收 -> 高\n"
@@ -147,8 +144,8 @@ def build_help_data(version: str) -> List[Dict]:
                 {
                     "配置文件": (
                         "配置文件\n\n科目定义存储在程序目录下的 setting.json 文件中，格式如下：\n\n"
-                        "{\n    \"Subjects\": {\n        \"语文 \": \"C\",\n"
-                        "        \"数学 \": \"M\",\n        \"英语 \": \"E\",\n        ...\n    }\n}\n\n"
+                        '{\n    "Subjects": {\n        "语文 ": "C",\n'
+                        '        "数学 ": "M",\n        "英语 ": "E",\n        ...\n    }\n}\n\n'
                         "Subjects 字典的键为科目显示名称，值为科目代码。\n\n"
                         "初始配置由程序自动生成。若 homework.json 已存在有效数据，"
                         "首次启动时会从中提取科目键作为默认配置。\n\n"
@@ -186,7 +183,7 @@ def build_help_data(version: str) -> List[Dict]:
                 {
                     "底部信息栏": (
                         "底部信息栏\n\n位于屏幕左下角，从左到右依次显示：\n\n"
-                        "1. 基本信息：显示 \"Homework Manager\" 及当前版本号。"
+                        '1. 基本信息：显示 "Homework Manager" 及当前版本号。'
                         "若窗口不在前台，则高亮显示「Background」提示。\n\n"
                         "2. 当前时间：格式为 YYYY-MM-DD HH:MM:SS，每秒更新。\n\n"
                         "3. 作业数量：显示当前作业数/最大作业数限制。"
@@ -227,11 +224,11 @@ def build_help_data(version: str) -> List[Dict]:
                 {
                     "数据文件结构": (
                         "数据文件（homework.json）结构\n\n"
-                        "{\n    \"VER\": 2,\n    \"C\": [\n"
-                        "        {\n            \"content\": \"作业内容\",\n"
-                        "            \"time\": 1762560000,\n"
-                        "            \"emphasize\": \"自动\"\n        }\n    ],\n"
-                        "    \"M\": [],\n    ...\n}\n\n"
+                        '{\n    "VER": 2,\n    "C": [\n'
+                        '        {\n            "content": "作业内容",\n'
+                        '            "time": 1762560000,\n'
+                        '            "emphasize": "自动"\n        }\n    ],\n'
+                        '    "M": [],\n    ...\n}\n\n'
                         "注意：time 字段可以是整数时间戳，也可以是任意文本字符串，"
                         "后者会直接作为自定义信息显示。"
                     ),
@@ -239,8 +236,8 @@ def build_help_data(version: str) -> List[Dict]:
                 {
                     "配置文件结构": (
                         "配置文件（setting.json）结构\n\n"
-                        "{\n    \"Subjects\": {\n        \"语文 \": \"C\",\n"
-                        "        \"数学 \": \"M\",\n        ...\n    }\n}\n\n"
+                        '{\n    "Subjects": {\n        "语文 ": "C",\n'
+                        '        "数学 ": "M",\n        ...\n    }\n}\n\n'
                         "Subjects 字典的键为科目显示名称，值为科目代码。"
                         "可通过菜单面板中的科目管理功能进行修改。"
                         "若文件不存在或缺少 Subjects 项，程序会在启动时自动生成。"
@@ -250,7 +247,7 @@ def build_help_data(version: str) -> List[Dict]:
                     "数据迁移": (
                         "数据迁移\n\n当 homework.json 中的 VER 字段小于当前程序所需的版本号时，"
                         "程序会在启动时自动执行数据格式升级：\n\n"
-                        "- 版本 0→1：为所有作业添加 emphasize（优先级）字段，默认值为 \"Standard\"\n"
+                        '- 版本 0→1：为所有作业添加 emphasize（优先级）字段，默认值为 "Standard"\n'
                         "- 版本 1→2：将旧优先级名称（Ignored/Unimportant/Standard/Urgent）"
                         "转换为新名称（很低/低/标准/高）\n\n"
                         "数据迁移为自动过程，无需用户手动干预。"
@@ -360,11 +357,13 @@ def build_help_data(version: str) -> List[Dict]:
 
 # ──────────────── HelpDialog ────────────────
 
+
 class HelpDialog:
     """帮助手册面板，支持树形导航。"""
 
-    def __init__(self, parent: tk.Tk, version: str,
-                 screen_width: int, screen_height: int):
+    def __init__(
+        self, parent: tk.Tk, version: str, screen_width: int, screen_height: int
+    ):
         self._tk = parent
         self._screen_w = screen_width
         self._screen_h = screen_height
@@ -419,8 +418,11 @@ class HelpDialog:
             font=config.FONT_HELP,
         )
         self._detail.place(
-            x=int(self._screen_w * 0.18), y=40,
-            relheight=1, relwidth=0.82, height=-40,
+            x=int(self._screen_w * 0.18),
+            y=40,
+            relheight=1,
+            relwidth=0.82,
+            height=-40,
         )
 
         # 解析帮助数据结构
@@ -434,8 +436,9 @@ class HelpDialog:
         self._suspend_events = False
 
         self._listbox.bind("<<ListboxSelect>>", self._on_select)
-        self._listbox.bind("<Enter>", lambda e: self._listbox.config(
-            fg=config.COLOR_FG_PRIMARY))
+        self._listbox.bind(
+            "<Enter>", lambda e: self._listbox.config(fg=config.COLOR_FG_PRIMARY)
+        )
         self._listbox.bind("<Leave>", lambda e: self._listbox.config(fg="#4D4D4D"))
 
         self._rebuild_list()
@@ -536,8 +539,9 @@ class HelpDialog:
             if t in self._expanded_paths:
                 # 折叠
                 self._expanded_paths = {
-                    p for p in self._expanded_paths
-                    if not (len(p) >= len(t) and p[:len(t)] == t)
+                    p
+                    for p in self._expanded_paths
+                    if not (len(p) >= len(t) and p[: len(t)] == t)
                 }
             else:
                 self._expanded_paths.add(t)
@@ -550,7 +554,7 @@ class HelpDialog:
         except ValueError:
             new_idx = None
             for l in range(len(target_path) - 1, -1, -1):
-                t = tuple(target_path[:l + 1])
+                t = tuple(target_path[: l + 1])
                 if t in self._display_paths:
                     new_idx = self._display_paths.index(t)
                     break

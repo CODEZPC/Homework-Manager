@@ -32,6 +32,8 @@ class Updater:
     """自动更新管理器。"""
 
     def __init__(self):
+        self._loglayer = "Update"
+
         self.status: str = UpdateStatus.NONE
         self.update_num: Optional[int] = None
         self.update_name: Optional[str] = None
@@ -131,12 +133,16 @@ class Updater:
                             now = time.time()
                             delta = now - last_time
                             if delta >= 1.0:
-                                self.download_speed = (downloaded - last_downloaded) / delta
+                                self.download_speed = (
+                                    downloaded - last_downloaded
+                                ) / delta
                                 last_time = now
                                 last_downloaded = downloaded
 
                             if self.download_size > 0:
-                                self.download_process = (downloaded / self.download_size) * 100
+                                self.download_process = (
+                                    downloaded / self.download_size
+                                ) * 100
 
             self.download_process = 100.0
             self.download_speed = 0.0

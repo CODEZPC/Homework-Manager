@@ -12,14 +12,18 @@ import config
 class MainScreen:
     """主全屏界面，包含所有 UI 子组件。"""
 
-    def __init__(self, parent: tk.Tk,
-                 on_exit: Callable[[], None],
-                 on_add: Callable[[], None],
-                 on_clear: Callable[[], None],
-                 on_menu: Callable[[], None],
-                 on_help: Callable[[], None],
-                 on_update_click: Callable[[], None],
-                 screen_width: int, screen_height: int):
+    def __init__(
+        self,
+        parent: tk.Tk,
+        on_exit: Callable[[], None],
+        on_add: Callable[[], None],
+        on_clear: Callable[[], None],
+        on_menu: Callable[[], None],
+        on_help: Callable[[], None],
+        on_update_click: Callable[[], None],
+        screen_width: int,
+        screen_height: int,
+    ):
         self._tk = parent
         self._screen_w = screen_width
         self._screen_h = screen_height
@@ -82,8 +86,9 @@ class MainScreen:
 
         # ── 遮罩放置 ──
         self._mask_left.place(x=0, y=0, relheight=1)
-        self._mask_right.place(x=screen_width - config.UI_SIDE_MARGIN_RIGHT, y=0,
-                               relheight=1)
+        self._mask_right.place(
+            x=screen_width - config.UI_SIDE_MARGIN_RIGHT, y=0, relheight=1
+        )
         self.info_bar.place(screen_height)
 
     # ──────────────── 顶部按钮 ────────────────
@@ -130,13 +135,19 @@ class MainScreen:
 
     # ──────────────── 侧边按钮 ────────────────
 
-    def show_side_buttons(self, index: int, item_count: int,
-                          on_delete: Callable[[], None],
-                          on_edit: Callable[[], None]) -> None:
+    def show_side_buttons(
+        self,
+        index: int,
+        item_count: int,
+        on_delete: Callable[[], None],
+        on_edit: Callable[[], None],
+    ) -> None:
         """在指定行显示侧边编辑/删除按钮。"""
-        spacing = (config.UI_ITEM_SPACING_COMPACT
-                   if item_count >= config.UI_ITEM_SPACING_THRESHOLD
-                   else config.UI_ITEM_SPACING_NORMAL)
+        spacing = (
+            config.UI_ITEM_SPACING_COMPACT
+            if item_count >= config.UI_ITEM_SPACING_THRESHOLD
+            else config.UI_ITEM_SPACING_NORMAL
+        )
         y = config.UI_CANVAS_TOP + 2 + index * spacing
 
         self._side_delete.place(x=5, y=y)
@@ -151,19 +162,23 @@ class MainScreen:
 
     # ──────────────── 按钮冷却 ────────────────
 
-    def cooldown_button(self, button: Button, original_text: str,
-                        remaining: int = config.BUTTON_COOLDOWN_TICKS) -> None:
+    def cooldown_button(
+        self,
+        button: Button,
+        original_text: str,
+        remaining: int = config.BUTTON_COOLDOWN_TICKS,
+    ) -> None:
         """
         按钮冷却：短暂禁用防止重复点击。
         remaining 以 1/10 秒为单位。
         """
         if remaining <= 0:
-            button.config(state=tk.NORMAL, text=original_text,
-                          font=config.FONT_BUTTON)
+            button.config(state=tk.NORMAL, text=original_text, font=config.FONT_BUTTON)
             return
         button.config(state=tk.DISABLED)
-        self._tk.after(100, lambda: self.cooldown_button(
-            button, original_text, remaining - 1))
+        self._tk.after(
+            100, lambda: self.cooldown_button(button, original_text, remaining - 1)
+        )
 
     # ──────────────── 鼠标位置计算 ────────────────
 
@@ -175,9 +190,11 @@ class MainScreen:
 
     def get_hovered_index(self, y: int, item_count: int) -> int:
         """根据鼠标 Y 坐标计算悬停的作业行索引。"""
-        spacing = (config.UI_ITEM_SPACING_COMPACT
-                   if item_count >= config.UI_ITEM_SPACING_THRESHOLD
-                   else config.UI_ITEM_SPACING_NORMAL)
+        spacing = (
+            config.UI_ITEM_SPACING_COMPACT
+            if item_count >= config.UI_ITEM_SPACING_THRESHOLD
+            else config.UI_ITEM_SPACING_NORMAL
+        )
         idx = int((y - config.UI_CANVAS_TOP) // spacing)
         if idx >= item_count:
             return -1
@@ -209,22 +226,26 @@ class InfoBar:
 
     def place(self, screen_height: int) -> None:
         """放置信息栏。"""
-        self._frame.place(x=config.UI_INFO_BAR_LEFT,
-                          y=screen_height - config.UI_INFO_BAR_BOTTOM)
+        self._frame.place(
+            x=config.UI_INFO_BAR_LEFT, y=screen_height - config.UI_INFO_BAR_BOTTOM
+        )
 
-    def update_basic(self, text: str, fg: str = config.COLOR_FG_DIM,
-                     bg: str = config.COLOR_BG_MAIN) -> None:
+    def update_basic(
+        self, text: str, fg: str = config.COLOR_FG_DIM, bg: str = config.COLOR_BG_MAIN
+    ) -> None:
         self.lbl_basic.config(text=text, fg=fg, bg=bg)
 
     def update_time(self, text: str) -> None:
         self.lbl_time.config(text=text)
 
-    def update_homework_count(self, text: str, fg: str = config.COLOR_FG_DIM,
-                              bg: str = config.COLOR_BG_MAIN) -> None:
+    def update_homework_count(
+        self, text: str, fg: str = config.COLOR_FG_DIM, bg: str = config.COLOR_BG_MAIN
+    ) -> None:
         self.lbl_homework.config(text=text, fg=fg, bg=bg)
 
-    def update_load(self, text: str, fg: str = config.COLOR_FG_DIM,
-                    bg: str = config.COLOR_BG_MAIN) -> None:
+    def update_load(
+        self, text: str, fg: str = config.COLOR_FG_DIM, bg: str = config.COLOR_BG_MAIN
+    ) -> None:
         self.lbl_load.config(text=text, fg=fg, bg=bg)
 
     def update_mouse(self, text: str, fg: str = config.COLOR_FG_DIM) -> None:
@@ -233,6 +254,7 @@ class InfoBar:
     def update_tick(self, text: str) -> None:
         self.lbl_tick.config(text=text)
 
-    def update_message(self, text: str, fg: str = config.COLOR_FG_DIM,
-                       bg: str = config.COLOR_BG_MAIN) -> None:
+    def update_message(
+        self, text: str, fg: str = config.COLOR_FG_DIM, bg: str = config.COLOR_BG_MAIN
+    ) -> None:
         self.lbl_message.config(text=text, fg=fg, bg=bg)

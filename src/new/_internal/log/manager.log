@@ -1,0 +1,12 @@
+2026-07-17 19:53:02,405 - INFO - [Logger] - ──────────────── 作业管理器启动 ────────────────
+2026-07-17 19:53:02,405 - INFO - [Logger] - 日志系统已初始化，日志文件: .\_internal\log\manager.log
+2026-07-17 19:53:02,772 - DEBUG - Starting new HTTPS connection (1): codezpc.cn:443
+2026-07-17 19:53:03,627 - DEBUG - https://codezpc.cn:443 "GET /Homework-Manager/update.json HTTP/1.1" 200 107
+2026-07-17 19:53:42,940 - INFO - [Logger] - ──────────────── 作业管理器启动 ────────────────
+2026-07-17 19:53:42,941 - INFO - [Logger] - 日志系统已初始化，日志文件: .\_internal\log\manager.log
+2026-07-17 19:53:43,254 - DEBUG - Starting new HTTPS connection (1): codezpc.cn:443
+2026-07-17 19:53:44,126 - DEBUG - https://codezpc.cn:443 "GET /Homework-Manager/update.json HTTP/1.1" 200 107
+2026-07-17 19:53:54,831 - INFO - [Logger] - ──────────────── 作业管理器启动 ────────────────
+2026-07-17 19:53:54,832 - INFO - [Logger] - 日志系统已初始化，日志文件: .\_internal\log\manager.log
+2026-07-17 19:53:55,176 - DEBUG - Starting new HTTPS connection (1): codezpc.cn:443
+2026-07-17 19:53:56,033 - DEBUG - https://codezpc.cn:443 "GET /Homework-Manager/update.json HTTP/1.1" 200 107

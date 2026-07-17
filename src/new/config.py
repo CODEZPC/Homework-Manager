@@ -8,8 +8,15 @@ import os
 import sys
 
 # ──────────────── 版本信息 ────────────────
-VERSION = "1.6.2.15"
-VERSION_NUM = 1006002015
+VERSION = "1.7.0.0 Indev 2"
+VERSION_NUM_1 = 1
+VERSION_NUM_2 = 7
+VERSION_NUM_3 = 0
+VERSION_NUM_4 = 0
+VERSION_NUM = (
+    VERSION_NUM_1 * 1e9 + VERSION_NUM_2 * 1e6 + VERSION_NUM_3 * 1e3 + VERSION_NUM_4
+)
+
 
 # ──────────────── 路径配置 ────────────────
 def _app_dir() -> str:
@@ -20,6 +27,7 @@ def _app_dir() -> str:
         return os.path.dirname(os.path.abspath(sys.executable))
     # 开发模式：当前文件在 src/new/ 下，数据文件在 src/ 下
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 APP_DIR = _app_dir()
 DATA_FILE = os.path.join(APP_DIR, "homework.json")
@@ -53,15 +61,33 @@ COLOR = COLOR_FG_DIM
 
 # ──────────────── 默认科目配置 ────────────────
 DEFAULT_SUBJECT_CODES = [
-    "C", "M", "E", "P1", "H1", "G1",
-    "PH1", "PH2", "CH1", "CH2", "B1", "OTH",
+    "C",
+    "M",
+    "E",
+    "P1",
+    "H1",
+    "G1",
+    "PH1",
+    "PH2",
+    "CH1",
+    "CH2",
+    "B1",
+    "OTH",
 ]
 
 DEFAULT_SUBJECT_DISPLAY_NAMES = [
-    "语文 ", "数学 ", "英语 ",
-    "政治 D1", "历史 D1", "地理 D1",
-    "物理 D1", "物理 D2", "化学 D1", "化学 D2",
-    "生物 D1", "其他",
+    "语文 ",
+    "数学 ",
+    "英语 ",
+    "政治 D1",
+    "历史 D1",
+    "地理 D1",
+    "物理 D1",
+    "物理 D2",
+    "化学 D1",
+    "化学 D2",
+    "生物 D1",
+    "其他",
 ]
 
 EMPHASIZE_LEVELS = ["自动", "很低", "低", "标准", "高"]
@@ -89,9 +115,9 @@ CANVAS_SCROLL_INTERVAL = 33  # ms，约 30fps
 BUTTON_COOLDOWN_TICKS = 5
 
 # Tick 行为参数
-TICK_HIDE_BUTTONS = 3       # 超过此 tick 隐藏按钮
-TICK_ANTI_SLEEP = 300       # 超过此 tick 触发防屏保
-TICK_ANTI_SLEEP_RESET = 3   # 防屏保后重置 tick
+TICK_HIDE_BUTTONS = 3  # 超过此 tick 隐藏按钮
+TICK_ANTI_SLEEP = 300  # 超过此 tick 触发防屏保
+TICK_ANTI_SLEEP_RESET = 3  # 防屏保后重置 tick
 
 # 防屏保鼠标目标位置
 ANTI_SLEEP_MOUSE_X = 400
@@ -121,3 +147,7 @@ FONT_SIDE_BUTTON = ("JetBrains Mono", 8)
 
 # ──────────────── 调试 ────────────────
 DEBUG = False
+
+
+def __debug():
+    pass

@@ -39,6 +39,7 @@ except Exception:
 import psutil
 
 import config
+from models import Logger
 from models import DataStore
 from services import (
     HomeworkService,
@@ -67,6 +68,11 @@ class Application:
     """应用程序主控制器，管理所有子系统和生命周期。"""
 
     def __init__(self):
+        # ── 日志层 ──
+        self._logger = Logger()
+        self._logger.setup_logging()
+        self._loglayer = "Main"
+
         # ── UI 层（需先创建以获取屏幕尺寸） ──
         self._root = RootWindow()
         self._tk = self._root.tk
@@ -141,7 +147,10 @@ class Application:
     def _calc_homework_limit(self) -> int:
         """根据屏幕高度计算最大作业显示数量。"""
         for limit in range(1000):
-            if limit * config.UI_ITEM_SPACING_COMPACT + config.UI_CANVAS_TOP >= self._screen_h - config.UI_CANVAS_TOP:
+            if (
+                limit * config.UI_ITEM_SPACING_COMPACT + config.UI_CANVAS_TOP
+                >= self._screen_h - config.UI_CANVAS_TOP
+            ):
                 return limit
         return 100
 
@@ -188,8 +197,7 @@ class Application:
         if self._tick > config.TICK_ANTI_SLEEP:
             if mouse_lib:
                 try:
-                    mouse_lib.move(config.ANTI_SLEEP_MOUSE_X,
-                                   config.ANTI_SLEEP_MOUSE_Y)
+                    mouse_lib.move(config.ANTI_SLEEP_MOUSE_X, config.ANTI_SLEEP_MOUSE_Y)
                     mouse_lib.click()
                 except Exception:
                     pass
@@ -208,19 +216,22 @@ class Application:
             flash_tick = 0
 
         # 前台检测
-        is_fg = (pygetwindow
-                 and pygetwindow.getActiveWindow()
-                 and pygetwindow.getActiveWindow().title == self._tk.title())
+        is_fg = (
+            pygetwindow
+            and pygetwindow.getActiveWindow()
+            and pygetwindow.getActiveWindow().title == self._tk.title()
+        )
 
         # 基本信息
         if not is_fg and flash_tick // 80 % 2 != 0:
             self._screen.info_bar.update_basic(
                 f"   Background    {config.VERSION}",
-                fg=config.COLOR_FG_WHITE, bg=config.COLOR_BG_INFO,
+                fg=config.COLOR_FG_WHITE,
+                bg=config.COLOR_BG_INFO,
             )
         else:
             self._screen.info_bar.update_basic(
-                f"Homework Manager {config.VERSION}",
+                f"Homework Manager {config.VERSION} |",
             )
 
         # 时间
@@ -234,17 +245,21 @@ class Application:
         if hw > self._homework_limit + 5:
             if flash_tick // 20 % 2 != 0:
                 self._screen.info_bar.update_homework_count(
-                    hw_text, fg=config.COLOR_FG_WHITE, bg=config.COLOR_BG_ERROR)
+                    hw_text, fg=config.COLOR_FG_WHITE, bg=config.COLOR_BG_ERROR
+                )
             else:
                 self._screen.info_bar.update_homework_count(
-                    hw_text, fg=config.COLOR_FG_RED)
+                    hw_text, fg=config.COLOR_FG_RED
+                )
         elif hw > self._homework_limit:
             if flash_tick // 20 % 2 != 0:
                 self._screen.info_bar.update_homework_count(
-                    hw_text, fg=config.COLOR_FG_BLACK, bg=config.COLOR_BG_WARN)
+                    hw_text, fg=config.COLOR_FG_BLACK, bg=config.COLOR_BG_WARN
+                )
             else:
                 self._screen.info_bar.update_homework_count(
-                    hw_text, fg=config.COLOR_FG_YELLOW)
+                    hw_text, fg=config.COLOR_FG_YELLOW
+                )
         else:
             self._screen.info_bar.update_homework_count(hw_text)
 
@@ -253,27 +268,29 @@ class Application:
         if self._load_amount > 200:
             if flash_tick // 20 % 2 != 0:
                 self._screen.info_bar.update_load(
-                    load_text, fg=config.COLOR_FG_WHITE, bg=config.COLOR_BG_ERROR)
+                    load_text, fg=config.COLOR_FG_WHITE, bg=config.COLOR_BG_ERROR
+                )
             else:
-                self._screen.info_bar.update_load(
-                    load_text, fg=config.COLOR_FG_RED)
+                self._screen.info_bar.update_load(load_text, fg=config.COLOR_FG_RED)
         elif self._load_amount > 100:
             if flash_tick // 20 % 2 != 0:
                 self._screen.info_bar.update_load(
-                    load_text, fg=config.COLOR_FG_BLACK, bg=config.COLOR_BG_WARN)
+                    load_text, fg=config.COLOR_FG_BLACK, bg=config.COLOR_BG_WARN
+                )
             else:
-                self._screen.info_bar.update_load(
-                    load_text, fg=config.COLOR_FG_YELLOW)
+                self._screen.info_bar.update_load(load_text, fg=config.COLOR_FG_YELLOW)
         else:
             self._screen.info_bar.update_load(load_text)
 
         # 鼠标
         if mouse_lib:
             self._screen.info_bar.update_mouse(
-                f"鼠标: ({self._mouse_x:04d}, {self._mouse_y:04d})")
+                f"鼠标: ({self._mouse_x:04d}, {self._mouse_y:04d})"
+            )
         else:
             self._screen.info_bar.update_mouse(
-                "鼠标: (====N/A====)", fg=config.COLOR_FG_YELLOW)
+                "鼠标: (====N/A====)", fg=config.COLOR_FG_YELLOW
+            )
 
         # Tick
         self._screen.info_bar.update_tick(f"Tick: {self._tick:03d}")
@@ -290,31 +307,44 @@ class Application:
             self._screen.info_bar.update_message("")
         elif s == "Connecting":
             self._screen.info_bar.update_message(
-                "尝试连接至服务器……", fg=config.COLOR_FG_WHITE)
+                "尝试连接至服务器……", fg=config.COLOR_FG_WHITE
+            )
         elif s == "Latest":
-            self._screen.info_bar.update_message(
-                "无需更新", fg=config.COLOR_FG_GREEN)
+            self._screen.info_bar.update_message("无需更新", fg=config.COLOR_FG_GREEN)
         elif s == "Needed":
             self._screen.info_bar.update_message(
                 f"发现更新：{self._updater.update_name} "
                 f"({self._updater.update_type} | {self._updater.update_ver})",
-                fg=config.COLOR_FG_WHITE, bg=config.COLOR_BG_INFO,
+                fg=config.COLOR_FG_WHITE,
+                bg=config.COLOR_BG_INFO,
             )
         elif s == "Downloading":
-            spd = self._updater.download_speed / 1048576 if self._updater.download_speed else 0
-            sz = self._updater.download_size / 1048576 if self._updater.download_size else 0
+            spd = (
+                self._updater.download_speed / 1048576
+                if self._updater.download_speed
+                else 0
+            )
+            sz = (
+                self._updater.download_size / 1048576
+                if self._updater.download_size
+                else 0
+            )
             self._screen.info_bar.update_message(
                 f"下载更新中……({self._updater.download_process:.2f}% "
                 f"{spd:.2f}MB/s | {sz:.1f}MB)",
-                fg=config.COLOR_FG_WHITE, bg=config.COLOR_BG_INFO,
+                fg=config.COLOR_FG_WHITE,
+                bg=config.COLOR_BG_INFO,
             )
         elif s == "Completed":
             self._screen.info_bar.update_message(
-                "重启以更新", fg=config.COLOR_FG_BLACK, bg=config.COLOR_BG_SUCCESS,
+                "重启以更新",
+                fg=config.COLOR_FG_BLACK,
+                bg=config.COLOR_BG_SUCCESS,
             )
         elif s == "Failed":
             self._screen.info_bar.update_message(
-                "离线或未能连接到服务器", fg=config.COLOR_FG_RED,
+                "离线或未能连接到服务器",
+                fg=config.COLOR_FG_RED,
             )
 
     def _on_update_status_change(self, status: str) -> None:
@@ -361,15 +391,15 @@ class Application:
         self._homework_data = self._homework_svc.load_and_sort(self._subject_codes)
 
         # 验证并修复键
-        self._homework_data, extra_keys, missing_keys = self._store.validate_and_fix_keys(
-            self._homework_data, self._subject_codes
+        self._homework_data, extra_keys, missing_keys = (
+            self._store.validate_and_fix_keys(self._homework_data, self._subject_codes)
         )
 
         if extra_keys:
             messagebox.showwarning(
                 "作业管理器·数据警告",
                 f"homework.json 中包含未配置的科目键：{', '.join(extra_keys)}，"
-                f"已自动忽略。\n如需使用，请在设置中添加对应科目。"
+                f"已自动忽略。\n如需使用，请在设置中添加对应科目。",
             )
 
         if extra_keys or missing_keys:
@@ -400,9 +430,11 @@ class Application:
         self._canvas_widths = []
         self._need_roll = []
 
-        spacing = (config.UI_ITEM_SPACING_COMPACT
-                   if len(all_items) >= config.UI_ITEM_SPACING_THRESHOLD
-                   else config.UI_ITEM_SPACING_NORMAL)
+        spacing = (
+            config.UI_ITEM_SPACING_COMPACT
+            if len(all_items) >= config.UI_ITEM_SPACING_THRESHOLD
+            else config.UI_ITEM_SPACING_NORMAL
+        )
 
         for idx, (txt, status) in enumerate(all_items):
             y = idx * spacing
@@ -411,7 +443,11 @@ class Application:
                 fill = config.COLOR_FG_DIM
 
             item = self._screen.canvas.create_text(
-                0, y, text=txt, anchor="nw", fill=fill,
+                0,
+                y,
+                text=txt,
+                anchor="nw",
+                fill=fill,
                 font=config.FONT_HOMEWORK,
             )
             self._canvas_items.append(item)
@@ -438,7 +474,8 @@ class Application:
         if self._scroll_aid:
             self._root.after_cancel(self._scroll_aid)
         self._scroll_aid = self._root.after(
-            config.CANVAS_SCROLL_INTERVAL, self._canvas_roll)
+            config.CANVAS_SCROLL_INTERVAL, self._canvas_roll
+        )
         self._schedule_reminder(self._scroll_aid)
 
     # ──────────────── 时间显示更新 ────────────────
@@ -461,9 +498,11 @@ class Application:
 
         idx = 0
         upload = 0
-        spacing = (config.UI_ITEM_SPACING_COMPACT
-                   if self._homework_count >= config.UI_ITEM_SPACING_THRESHOLD
-                   else config.UI_ITEM_SPACING_NORMAL)
+        spacing = (
+            config.UI_ITEM_SPACING_COMPACT
+            if self._homework_count >= config.UI_ITEM_SPACING_THRESHOLD
+            else config.UI_ITEM_SPACING_NORMAL
+        )
 
         for code in self._subject_codes:
             for item in self._homework_data.get(code, []):
@@ -482,30 +521,28 @@ class Application:
                 )
 
                 if time_status[1] >= 3:
-                    lbl.config(bg=config.COLOR_BG_TIME_HIGH,
-                               fg=config.COLOR_BG_MAIN)
+                    lbl.config(bg=config.COLOR_BG_TIME_HIGH, fg=config.COLOR_BG_MAIN)
                     if time_status[1] == 4:
                         upload = 1
                 elif time_status[1] == 2:
-                    lbl.config(bg=config.COLOR_BG_TIME_MED,
-                               fg=config.COLOR_FG_WHITE)
+                    lbl.config(bg=config.COLOR_BG_TIME_MED, fg=config.COLOR_FG_WHITE)
                 elif time_status[1] == 1:
-                    lbl.config(bg=config.COLOR_BG_MAIN,
-                               fg=config.COLOR_FG_PRIMARY)
+                    lbl.config(bg=config.COLOR_BG_MAIN, fg=config.COLOR_FG_PRIMARY)
                 elif time_status[1] == 0:
-                    lbl.config(bg=config.COLOR_BG_MAIN,
-                               fg=config.COLOR_FG_DIM)
+                    lbl.config(bg=config.COLOR_BG_MAIN, fg=config.COLOR_FG_DIM)
                 elif time_status[1] == -1:
-                    lbl.config(bg=config.COLOR_BG_MAIN,
-                               fg=config.COLOR_FG_DIM)
+                    lbl.config(bg=config.COLOR_BG_MAIN, fg=config.COLOR_FG_DIM)
                     try:
                         self._screen.canvas.itemconfig(
-                            self._canvas_items[idx], fill=config.COLOR_FG_DIM)
+                            self._canvas_items[idx], fill=config.COLOR_FG_DIM
+                        )
                     except Exception:
                         pass
 
-                lbl.place(x=self._screen.time_display_x,
-                          y=config.UI_CANVAS_TOP + idx * spacing)
+                lbl.place(
+                    x=self._screen.time_display_x,
+                    y=config.UI_CANVAS_TOP + idx * spacing,
+                )
                 self._time_labels.append(lbl)
                 idx += 1
 
@@ -515,7 +552,8 @@ class Application:
         now = time.localtime()
         remaining_seconds = 60 - now.tm_sec
         self._upload_aid = self._root.after(
-            remaining_seconds * 1000, self._upload_time_display)
+            remaining_seconds * 1000, self._upload_time_display
+        )
         self._schedule_reminder(self._upload_aid)
 
     # ──────────────── Canvas 滚动 ────────────────
@@ -613,10 +651,10 @@ class Application:
         """批量清理已过期作业。"""
         self._screen.cooldown_button(self._screen._btn_clear, "清理")
         removed = self._homework_svc.clear_expired(
-            self._homework_data, self._subject_codes)
+            self._homework_data, self._subject_codes
+        )
         if removed > 0:
-            messagebox.showinfo("作业管理器·清理完成",
-                                f"已清理 {removed} 个作业。")
+            messagebox.showinfo("作业管理器·清理完成", f"已清理 {removed} 个作业。")
             self._draw_homework()
         else:
             messagebox.showinfo("作业管理器·清理完成", "没有需要清理的作业。")
@@ -642,9 +680,15 @@ class Application:
         """处理更新消息点击。"""
         self._updater.handle_click()
 
-    def _on_homework_submit(self, subject_idx: int, subject_code: str,
-                            content: str, deadline, emphasize: str,
-                            replace_target=None) -> None:
+    def _on_homework_submit(
+        self,
+        subject_idx: int,
+        subject_code: str,
+        content: str,
+        deadline,
+        emphasize: str,
+        replace_target=None,
+    ) -> None:
         """处理作业提交（添加或编辑）。"""
         if replace_target:
             old_code, old_idx = replace_target
@@ -676,8 +720,7 @@ class Application:
 
         self._screen.show_top_bar()
 
-        hovered = self._screen.get_hovered_index(
-            self._mouse_y, self._homework_count)
+        hovered = self._screen.get_hovered_index(self._mouse_y, self._homework_count)
 
         if hovered < 0:
             self._screen.hide_side_buttons()
@@ -695,14 +738,16 @@ class Application:
         if not messagebox.askyesno("作业管理器·删除提示", "确定要删除吗？"):
             return
         result = self._homework_svc.delete_homework(
-            self._homework_data, self._subject_codes, index)
+            self._homework_data, self._subject_codes, index
+        )
         if result:
             self._draw_homework()
 
     def _edit_homework(self, index: int) -> None:
         """编辑指定索引的作业。"""
         found = self._homework_svc.find_homework(
-            self._homework_data, self._subject_codes, index)
+            self._homework_data, self._subject_codes, index
+        )
         if not found:
             return
 
@@ -715,7 +760,8 @@ class Application:
 
         try:
             emphasize_index = config.EMPHASIZE_LEVELS.index(
-                item.get("emphasize", "自动"))
+                item.get("emphasize", "自动")
+            )
         except ValueError:
             emphasize_index = 0
 

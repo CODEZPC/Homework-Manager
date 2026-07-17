@@ -3,8 +3,16 @@
 """
 
 import tkinter as tk
-from tkinter import (Frame, Label, Button, Listbox, Toplevel,
-                     messagebox, simpledialog, ttk)
+from tkinter import (
+    Frame,
+    Label,
+    Button,
+    Listbox,
+    Toplevel,
+    messagebox,
+    simpledialog,
+    ttk,
+)
 from tkinter import StringVar
 import json
 from typing import Callable, Dict, Optional
@@ -16,9 +24,9 @@ from models.data_store import DataStore
 class MenuDialog:
     """科目管理面板。"""
 
-    def __init__(self, parent: tk.Tk,
-                 data_store: DataStore,
-                 on_restart: Callable[[], None]):
+    def __init__(
+        self, parent: tk.Tk, data_store: DataStore, on_restart: Callable[[], None]
+    ):
         self._tk = parent
         self._store = data_store
         self._on_restart = on_restart
@@ -155,38 +163,47 @@ class MenuDialog:
             "relief": tk.FLAT,
         }
 
-        Button(action_frame, text="添加", command=self._add_subject,
-               **btn_style).pack(side="left", fill=tk.X, expand=True)
-        Button(action_frame, text="重命名", command=self._rename_subject,
-               **btn_style).pack(side="left", fill=tk.X, expand=True)
-        Button(action_frame, text="删除", command=self._delete_subject,
-               **btn_style).pack(side="left", fill=tk.X, expand=True)
-        Button(action_frame, text="上移", command=self._move_up,
-               **btn_style).pack(side="left", fill=tk.X, expand=True)
-        Button(action_frame, text="下移", command=self._move_down,
-               **btn_style).pack(side="left", fill=tk.X, expand=True)
+        Button(action_frame, text="添加", command=self._add_subject, **btn_style).pack(
+            side="left", fill=tk.X, expand=True
+        )
+        Button(
+            action_frame, text="重命名", command=self._rename_subject, **btn_style
+        ).pack(side="left", fill=tk.X, expand=True)
+        Button(
+            action_frame, text="删除", command=self._delete_subject, **btn_style
+        ).pack(side="left", fill=tk.X, expand=True)
+        Button(action_frame, text="上移", command=self._move_up, **btn_style).pack(
+            side="left", fill=tk.X, expand=True
+        )
+        Button(action_frame, text="下移", command=self._move_down, **btn_style).pack(
+            side="left", fill=tk.X, expand=True
+        )
 
     # ──────────────── CRUD 操作 ────────────────
 
     def _add_subject(self) -> None:
         name = simpledialog.askstring(
-            "添加科目", "请输入科目显示名称：", parent=self._frame)
+            "添加科目", "请输入科目显示名称：", parent=self._frame
+        )
         if not name or not name.strip():
             return
         name = name.strip()
         if name in self._subjects:
-            messagebox.showwarning("作业管理器·错误", "科目名称已存在。",
-                                   parent=self._frame)
+            messagebox.showwarning(
+                "作业管理器·错误", "科目名称已存在。", parent=self._frame
+            )
             return
 
         code = simpledialog.askstring(
-            "添加科目", f"请输入科目键名（英文标识）：", parent=self._frame)
+            "添加科目", f"请输入科目键名（英文标识）：", parent=self._frame
+        )
         if not code or not code.strip():
             return
         code = code.strip().upper()
         if code in self._subjects.values():
-            messagebox.showwarning("作业管理器·错误", "科目键名已存在。",
-                                   parent=self._frame)
+            messagebox.showwarning(
+                "作业管理器·错误", "科目键名已存在。", parent=self._frame
+            )
             return
 
         self._subjects[name] = code
@@ -198,8 +215,9 @@ class MenuDialog:
     def _rename_subject(self) -> None:
         selection = self._listbox.curselection()
         if not selection:
-            messagebox.showinfo("作业管理器·错误", "请先选择要重命名的科目。",
-                                parent=self._frame)
+            messagebox.showinfo(
+                "作业管理器·错误", "请先选择要重命名的科目。", parent=self._frame
+            )
             return
 
         idx = selection[0]
@@ -207,27 +225,35 @@ class MenuDialog:
         old_code = self._subjects[old_name]
 
         new_name = simpledialog.askstring(
-            "重命名科目", f"当前名称：{old_name}\n新显示名称：",
-            parent=self._frame, initialvalue=old_name)
+            "重命名科目",
+            f"当前名称：{old_name}\n新显示名称：",
+            parent=self._frame,
+            initialvalue=old_name,
+        )
         if not new_name or not new_name.strip():
             return
         new_name = new_name.strip()
         if new_name != old_name and new_name in self._subjects:
-            messagebox.showwarning("作业管理器·错误", "科目名称已存在。",
-                                   parent=self._frame)
+            messagebox.showwarning(
+                "作业管理器·错误", "科目名称已存在。", parent=self._frame
+            )
             return
 
         new_code = simpledialog.askstring(
-            "重命名科目", f"当前键名：{old_code}\n新键名（留空保持不变）：",
-            parent=self._frame, initialvalue=old_code)
+            "重命名科目",
+            f"当前键名：{old_code}\n新键名（留空保持不变）：",
+            parent=self._frame,
+            initialvalue=old_code,
+        )
         if new_code is not None:
             new_code = new_code.strip().upper()
             if not new_code:
                 new_code = old_code
 
         if new_code != old_code and new_code in self._subjects.values():
-            messagebox.showwarning("作业管理器·错误", "科目键名已存在。",
-                                   parent=self._frame)
+            messagebox.showwarning(
+                "作业管理器·错误", "科目键名已存在。", parent=self._frame
+            )
             return
 
         del self._subjects[old_name]
@@ -246,8 +272,9 @@ class MenuDialog:
     def _delete_subject(self) -> None:
         selection = self._listbox.curselection()
         if not selection:
-            messagebox.showinfo("作业管理器·错误", "请先选择要删除的科目。",
-                                parent=self._frame)
+            messagebox.showinfo(
+                "作业管理器·错误", "请先选择要删除的科目。", parent=self._frame
+            )
             return
 
         idx = selection[0]
@@ -255,8 +282,9 @@ class MenuDialog:
         code = self._subjects[name]
 
         if len(self._subjects) <= 1:
-            messagebox.showwarning("作业管理器·错误", "至少需要保留一个科目。",
-                                   parent=self._frame)
+            messagebox.showwarning(
+                "作业管理器·错误", "至少需要保留一个科目。", parent=self._frame
+            )
             return
 
         hw_data = self._store.load_homework()
@@ -265,12 +293,13 @@ class MenuDialog:
         msg = f"确定要删除科目「{name}」吗？"
         if count > 0:
             msg += f"\n该科目下有 {count} 个作业将被同时删除。"
-        msg += f"\n\nDelete subject \"{name}\"?"
+        msg += f'\n\nDelete subject "{name}"?'
         if count > 0:
             msg += f"\n{count} homework(s) under this subject will also be deleted."
 
-        if not messagebox.askyesno("删除科目 | Delete Subject", msg,
-                                   parent=self._frame):
+        if not messagebox.askyesno(
+            "删除科目 | Delete Subject", msg, parent=self._frame
+        ):
             return
 
         del self._subjects[name]

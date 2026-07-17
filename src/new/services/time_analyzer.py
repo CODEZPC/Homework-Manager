@@ -9,8 +9,9 @@ from typing import Any, Dict, Tuple, Union
 import config
 
 
-def analyze_time(timestamp: Union[int, float, str],
-                 emphasize: str = "自动") -> Tuple[str, int]:
+def analyze_time(
+    timestamp: Union[int, float, str], emphasize: str = "自动"
+) -> Tuple[str, int]:
     """
     计算目标时间与当前时间的关系，返回 (显示文本, 优先级数值)。
 
@@ -66,9 +67,15 @@ def analyze_time(timestamp: Union[int, float, str],
     elif timestamp < time_day_start + 86400 * 3:
         return (f"后天{t_str}收", 0 if auto else emphasize_prefix(emphasize))
     elif timestamp < time_day_start + 86400 * (8 - int(week_now)):
-        return (f"周{we[int(w_str)]}{t_str}收", 0 if auto else emphasize_prefix(emphasize))
+        return (
+            f"周{we[int(w_str)]}{t_str}收",
+            0 if auto else emphasize_prefix(emphasize),
+        )
     elif timestamp < time_day_start + 86400 * (15 - int(week_now)):
-        return (f"下周{we[int(w_str)]}{t_str}收", 0 if auto else emphasize_prefix(emphasize))
+        return (
+            f"下周{we[int(w_str)]}{t_str}收",
+            0 if auto else emphasize_prefix(emphasize),
+        )
     else:
         return (f"{time.strftime('%Y/%m/%d', time.localtime(timestamp))}收", 0)
 

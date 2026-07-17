@@ -14,6 +14,7 @@ class HomeworkService:
 
     def __init__(self, data_store: DataStore):
         self._store = data_store
+        self._loglayer = "Homework"
 
     def load_and_sort(self, subject_codes: List[str]) -> Dict[str, Any]:
         """
@@ -37,21 +38,35 @@ class HomeworkService:
 
         return data
 
-    def add_homework(self, data: Dict[str, Any], subject_code: str,
-                     content: str, deadline: Any, emphasize: str) -> bool:
+    def add_homework(
+        self,
+        data: Dict[str, Any],
+        subject_code: str,
+        content: str,
+        deadline: Any,
+        emphasize: str,
+    ) -> bool:
         """添加一条新作业。"""
         items = self._store.get_subject_items(data, subject_code)
-        items.append({
-            "content": content,
-            "time": deadline,
-            "emphasize": emphasize,
-        })
+        items.append(
+            {
+                "content": content,
+                "time": deadline,
+                "emphasize": emphasize,
+            }
+        )
         return self._store.save_homework(data)
 
-    def update_homework(self, data: Dict[str, Any],
-                        old_subject: str, old_index: int,
-                        new_subject: str, content: str,
-                        deadline: Any, emphasize: str) -> bool:
+    def update_homework(
+        self,
+        data: Dict[str, Any],
+        old_subject: str,
+        old_index: int,
+        new_subject: str,
+        content: str,
+        deadline: Any,
+        emphasize: str,
+    ) -> bool:
         """
         更新（替换）一条已有作业。
         若科目发生变化，则从旧科目移除并添加到新科目。
@@ -82,9 +97,9 @@ class HomeworkService:
 
         return self._store.save_homework(data)
 
-    def delete_homework(self, data: Dict[str, Any],
-                        subject_codes: List[str],
-                        global_index: int) -> Optional[bool]:
+    def delete_homework(
+        self, data: Dict[str, Any], subject_codes: List[str], global_index: int
+    ) -> Optional[bool]:
         """
         按全局索引删除一条作业。返回是否成功保存。
         """
@@ -98,8 +113,7 @@ class HomeworkService:
                 count += 1
         return None  # 未找到
 
-    def clear_expired(self, data: Dict[str, Any],
-                      subject_codes: List[str]) -> int:
+    def clear_expired(self, data: Dict[str, Any], subject_codes: List[str]) -> int:
         """
         清理所有已过期作业。返回清理数量。
         """
@@ -130,9 +144,9 @@ class HomeworkService:
             self._store.save_homework(data)
         return removed
 
-    def find_homework(self, data: Dict[str, Any],
-                      subject_codes: List[str],
-                      global_index: int) -> Optional[Tuple[str, int, Dict]]:
+    def find_homework(
+        self, data: Dict[str, Any], subject_codes: List[str], global_index: int
+    ) -> Optional[Tuple[str, int, Dict]]:
         """
         按全局索引查找作业，返回 (科目代码, 科目内索引, 作业字典)。
         """

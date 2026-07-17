@@ -5,6 +5,8 @@ ClassIsland 集成服务 - 通过 URI 协议与 ClassIsland 课表工具交互�
 import subprocess
 import config
 
+_loglayer = "Classisland"
+
 
 def call_uri(uri: str, mode: str = "run") -> bool:
     """

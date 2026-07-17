@@ -6,7 +6,8 @@ from views.help_dialog import HelpDialog
 
 __all__ = [
     "RootWindow",
-    "MainScreen", "InfoBar",
+    "MainScreen",
+    "InfoBar",
     "HomeworkDialog",
     "MenuDialog",
     "HelpDialog",

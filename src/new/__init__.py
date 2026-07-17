@@ -11,5 +11,5 @@
 
 from app import main, Application
 
-__version__ = "1.6.2.15"
+__version__ = "1.7.0.0 Indev 2"
 __all__ = ["main", "Application"]
