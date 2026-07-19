@@ -103,11 +103,11 @@ class MainScreen:
         }
 
         buttons = [
-            ("退出", self._on_exit),
-            ("添加", self._on_add),
-            ("清理", self._on_clear),
-            ("帮助", self._on_help),
             ("菜单", self._on_menu),
+            ("帮助", self._on_help),
+            ("清理", self._on_clear),
+            ("添加", self._on_add),
+            ("退出", self._on_exit),
         ]
 
         self._top_buttons: List[Button] = []
@@ -117,11 +117,11 @@ class MainScreen:
             self._top_buttons.append(btn)
 
         # 为 添加 和 清理 按钮保存引用以便冷却
-        self._btn_exit = self._top_buttons[-1]
-        self._btn_add = self._top_buttons[-2]
+        self._btn_exit = self._top_buttons[-5]
+        self._btn_add = self._top_buttons[-4]
         self._btn_clear = self._top_buttons[-3]
-        self._btn_help = self._top_buttons[-4]
-        self._btn_menu = self._top_buttons[-5]
+        self._btn_help = self._top_buttons[-2]
+        self._btn_menu = self._top_buttons[-1]
 
     # ──────────────── 顶部栏显示/隐藏 ────────────────
 

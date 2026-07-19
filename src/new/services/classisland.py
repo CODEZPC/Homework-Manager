@@ -4,7 +4,9 @@ ClassIsland 集成服务 - 通过 URI 协议与 ClassIsland 课表工具交互�
 
 import subprocess
 import config
+from models import Logger
 
+_logger = Logger()
 _loglayer = "Classisland"
 
 
@@ -32,14 +34,17 @@ def call_uri(uri: str, mode: str = "run") -> bool:
 
 def homework_mode_on() -> bool:
     """通知 ClassIsland 作业模式已开启。"""
+    _logger.log_output(_loglayer, "Info", "Classisland ON")
     return call_uri("homeworkmode-on")
 
 
 def homework_mode_off() -> bool:
     """通知 ClassIsland 作业模式已关闭。"""
+    _logger.log_output(_loglayer, "Info", "Classisland OFF")
     return call_uri("homeworkmode-off")
 
 
 def homework_upload() -> bool:
     """通知 ClassIsland 有作业需要提交。"""
+    _logger.log_output(_loglayer, "Info", "Classisland Homework Update")
     return call_uri("Homeworkmode-upload")

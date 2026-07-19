@@ -10,3 +10,99 @@
 2026-07-17 19:53:54,832 - INFO - [Logger] - 日志系统已初始化，日志文件: .\_internal\log\manager.log
 2026-07-17 19:53:55,176 - DEBUG - Starting new HTTPS connection (1): codezpc.cn:443
 2026-07-17 19:53:56,033 - DEBUG - https://codezpc.cn:443 "GET /Homework-Manager/update.json HTTP/1.1" 200 107
+2026-07-18 07:48:58,943 - INFO - [Logger] - ──────────────── 作业管理器启动 ────────────────
+2026-07-18 07:48:58,944 - INFO - [Logger] - 日志系统已初始化，日志文件: .\_internal\log\manager.log
+2026-07-18 07:48:59,507 - INFO - [Main] - 创建主窗口完成
+2026-07-18 07:48:59,515 - INFO - [Main] - 数据校验完成
+2026-07-18 07:48:59,515 - INFO - [Main] - 自动更新启动完成
+2026-07-18 07:48:59,516 - INFO - [Main] - 科目配置获取完成
+2026-07-18 07:48:59,516 - INFO - [Main] - 作业数据初始化完成
+2026-07-18 07:48:59,516 - INFO - [Main] - 渲染器初始化完成
+2026-07-18 07:48:59,516 - INFO - [Main] - 定时器初始化完成
+2026-07-18 07:48:59,516 - INFO - [Main] - 状态常量初始化完成
+2026-07-18 07:48:59,545 - INFO - [Main] - 主界面启动完成
+2026-07-18 07:48:59,547 - INFO - [Main] - 自动数据迁移检验完成
+2026-07-18 07:48:59,547 - INFO - [Classisland] - Classisland ON
+2026-07-18 07:48:59,700 - DEBUG - Starting new HTTPS connection (1): codezpc.cn:443
+2026-07-18 07:49:00,715 - DEBUG - https://codezpc.cn:443 "GET /Homework-Manager/update.json HTTP/1.1" 200 107
+2026-07-18 07:49:01,350 - INFO - [Classisland] - Classisland OFF
+2026-07-18 07:50:10,437 - INFO - [Logger] - ──────────────── 作业管理器启动 ────────────────
+2026-07-18 07:50:10,437 - INFO - [Logger] - 日志系统已初始化，日志文件: .\_internal\log\manager.log
+2026-07-18 07:50:10,603 - INFO - [Main] - 创建主窗口完成
+2026-07-18 07:50:10,603 - INFO - [Main] - 数据校验完成
+2026-07-18 07:50:10,603 - INFO - [Main] - 自动更新启动完成
+2026-07-18 07:50:10,603 - INFO - [Main] - 科目配置获取完成
+2026-07-18 07:50:10,603 - INFO - [Main] - 作业数据初始化完成
+2026-07-18 07:50:10,603 - INFO - [Main] - 渲染器初始化完成
+2026-07-18 07:50:10,603 - INFO - [Main] - 定时器初始化完成
+2026-07-18 07:50:10,603 - INFO - [Main] - 状态常量初始化完成
+2026-07-18 07:50:10,610 - INFO - [Main] - 主界面启动完成
+2026-07-18 07:50:10,616 - INFO - [Main] - 自动数据迁移检验完成
+2026-07-18 07:50:10,616 - INFO - [Classisland] - Classisland ON
+2026-07-18 07:50:10,754 - DEBUG - Starting new HTTPS connection (1): codezpc.cn:443
+2026-07-18 07:50:11,626 - DEBUG - https://codezpc.cn:443 "GET /Homework-Manager/update.json HTTP/1.1" 200 107
+2026-07-18 07:50:16,744 - INFO - [Classisland] - Classisland OFF
+2026-07-18 07:50:46,038 - INFO - [Logger] - ──────────────── 作业管理器启动 ────────────────
+2026-07-18 07:50:46,039 - INFO - [Logger] - 日志系统已初始化，日志文件: .\_internal\log\manager.log
+2026-07-18 07:50:46,201 - INFO - [Main] - 创建主窗口完成
+2026-07-18 07:50:46,202 - INFO - [Main] - 数据校验完成
+2026-07-18 07:50:46,202 - INFO - [Main] - 自动更新启动完成
+2026-07-18 07:50:46,203 - INFO - [Main] - 科目配置获取完成
+2026-07-18 07:50:46,203 - INFO - [Main] - 作业数据初始化完成
+2026-07-18 07:50:46,203 - INFO - [Main] - 渲染器初始化完成
+2026-07-18 07:50:46,203 - INFO - [Main] - 定时器初始化完成
+2026-07-18 07:50:46,203 - INFO - [Main] - 状态常量初始化完成
+2026-07-18 07:50:46,212 - INFO - [Main] - 主界面启动完成
+2026-07-18 07:50:46,214 - INFO - [Main] - 自动数据迁移检验完成
+2026-07-18 07:50:46,214 - INFO - [Classisland] - Classisland ON
+2026-07-18 07:50:46,347 - DEBUG - Starting new HTTPS connection (1): codezpc.cn:443
+2026-07-18 07:50:47,041 - DEBUG - https://codezpc.cn:443 "GET /Homework-Manager/update.json HTTP/1.1" 200 107
+2026-07-18 07:50:58,537 - INFO - [Classisland] - Classisland OFF
+2026-07-18 07:51:11,567 - INFO - [Logger] - ──────────────── 作业管理器启动 ────────────────
+2026-07-18 07:51:11,567 - INFO - [Logger] - 日志系统已初始化，日志文件: .\_internal\log\manager.log
+2026-07-18 07:51:11,728 - INFO - [Main] - 创建主窗口完成
+2026-07-18 07:51:11,730 - INFO - [Main] - 数据校验完成
+2026-07-18 07:51:11,730 - INFO - [Main] - 自动更新启动完成
+2026-07-18 07:51:11,730 - INFO - [Main] - 科目配置获取完成
+2026-07-18 07:51:11,730 - INFO - [Main] - 作业数据初始化完成
+2026-07-18 07:51:11,730 - INFO - [Main] - 渲染器初始化完成
+2026-07-18 07:51:11,730 - INFO - [Main] - 定时器初始化完成
+2026-07-18 07:51:11,732 - INFO - [Main] - 状态常量初始化完成
+2026-07-18 07:51:11,740 - INFO - [Main] - 主界面启动完成
+2026-07-18 07:51:11,741 - INFO - [Main] - 自动数据迁移检验完成
+2026-07-18 07:51:11,741 - INFO - [Classisland] - Classisland ON
+2026-07-18 07:51:11,874 - DEBUG - Starting new HTTPS connection (1): codezpc.cn:443
+2026-07-18 07:51:12,569 - DEBUG - https://codezpc.cn:443 "GET /Homework-Manager/update.json HTTP/1.1" 200 107
+2026-07-18 07:51:15,890 - INFO - [Classisland] - Classisland OFF
+2026-07-18 07:51:43,495 - INFO - [Logger] - ──────────────── 作业管理器启动 ────────────────
+2026-07-18 07:51:43,495 - INFO - [Logger] - 日志系统已初始化，日志文件: .\_internal\log\manager.log
+2026-07-18 07:51:43,658 - INFO - [Main] - 创建主窗口完成
+2026-07-18 07:51:43,658 - INFO - [Main] - 数据校验完成
+2026-07-18 07:51:43,658 - INFO - [Main] - 自动更新启动完成
+2026-07-18 07:51:43,658 - INFO - [Main] - 科目配置获取完成
+2026-07-18 07:51:43,658 - INFO - [Main] - 作业数据初始化完成
+2026-07-18 07:51:43,658 - INFO - [Main] - 渲染器初始化完成
+2026-07-18 07:51:43,658 - INFO - [Main] - 定时器初始化完成
+2026-07-18 07:51:43,658 - INFO - [Main] - 状态常量初始化完成
+2026-07-18 07:51:43,668 - INFO - [Main] - 主界面启动完成
+2026-07-18 07:51:43,669 - INFO - [Main] - 自动数据迁移检验完成
+2026-07-18 07:51:43,670 - INFO - [Classisland] - Classisland ON
+2026-07-18 07:51:43,808 - DEBUG - Starting new HTTPS connection (1): codezpc.cn:443
+2026-07-18 07:51:44,500 - DEBUG - https://codezpc.cn:443 "GET /Homework-Manager/update.json HTTP/1.1" 200 107
+2026-07-18 07:51:48,756 - INFO - [Classisland] - Classisland OFF
+2026-07-18 07:51:50,711 - INFO - [Logger] - ──────────────── 作业管理器启动 ────────────────
+2026-07-18 07:51:50,711 - INFO - [Logger] - 日志系统已初始化，日志文件: .\_internal\log\manager.log
+2026-07-18 07:51:50,874 - INFO - [Main] - 创建主窗口完成
+2026-07-18 07:51:50,875 - INFO - [Main] - 数据校验完成
+2026-07-18 07:51:50,875 - INFO - [Main] - 自动更新启动完成
+2026-07-18 07:51:50,876 - INFO - [Main] - 科目配置获取完成
+2026-07-18 07:51:50,876 - INFO - [Main] - 作业数据初始化完成
+2026-07-18 07:51:50,876 - INFO - [Main] - 渲染器初始化完成
+2026-07-18 07:51:50,876 - INFO - [Main] - 定时器初始化完成
+2026-07-18 07:51:50,876 - INFO - [Main] - 状态常量初始化完成
+2026-07-18 07:51:50,885 - INFO - [Main] - 主界面启动完成
+2026-07-18 07:51:50,886 - INFO - [Main] - 自动数据迁移检验完成
+2026-07-18 07:51:50,886 - INFO - [Classisland] - Classisland ON
+2026-07-18 07:51:51,026 - DEBUG - Starting new HTTPS connection (1): codezpc.cn:443
+2026-07-18 07:51:51,722 - DEBUG - https://codezpc.cn:443 "GET /Homework-Manager/update.json HTTP/1.1" 200 107
+2026-07-18 07:51:51,982 - INFO - [Classisland] - Classisland OFF

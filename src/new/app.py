@@ -77,24 +77,29 @@ class Application:
         self._root = RootWindow()
         self._tk = self._root.tk
         self._screen_w, self._screen_h = self._root.get_screen_size()
+        self._logger.log_output(self._loglayer, "Info", "创建主窗口完成")
 
         # ── 数据层 ──
         self._store = DataStore()
         self._store.ensure_defaults()
+        self._logger.log_output(self._loglayer, "Info", "数据校验完成")
 
         # ── 业务层 ──
         self._homework_svc = HomeworkService(self._store)
         self._updater = Updater()
         self._updater.set_callback(self._on_update_status_change)
+        self._logger.log_output(self._loglayer, "Info", "自动更新启动完成")
 
         # ── 科目配置 ──
         self._subjects = self._store.get_subjects()
         self._subject_codes = list(self._subjects.values())
         self._subject_names = list(self._subjects.keys())
+        self._logger.log_output(self._loglayer, "Info", "科目配置获取完成")
 
         # ── 作业数据 ──
         self._homework_data: dict = {}
         self._homework_count = 0
+        self._logger.log_output(self._loglayer, "Info", "作业数据初始化完成")
 
         # ── Canvas 渲染状态 ──
         self._canvas_items: list = []
@@ -102,6 +107,7 @@ class Application:
         self._need_roll: list = []
         self._last_frame_time: Optional[float] = None
         self._load_amount = 0
+        self._logger.log_output(self._loglayer, "Info", "渲染器初始化完成")
 
         # ── 定时器 ID ──
         self._tick_aid: Optional[str] = None
@@ -109,6 +115,7 @@ class Application:
         self._scroll_aid: Optional[str] = None
         self._info_aid: Optional[str] = None
         self._reminder_aids: list = []
+        self._logger.log_output(self._loglayer, "Info", "定时器初始化完成")
 
         # ── 状态 ──
         self._tick = 0
@@ -117,6 +124,7 @@ class Application:
 
         # ── 计算作业上限 ──
         self._homework_limit = self._calc_homework_limit()
+        self._logger.log_output(self._loglayer, "Info", "状态常量初始化完成")
 
         # ── 主界面 ──
         self._screen = MainScreen(
@@ -130,12 +138,14 @@ class Application:
             screen_width=self._screen_w,
             screen_height=self._screen_h,
         )
+        self._logger.log_output(self._loglayer, "Info", "主界面启动完成")
 
         # ── 时间显示 Label 列表 ──
         self._time_labels: list = []
 
         # ── 数据迁移 ──
         self._migrate_data()
+        self._logger.log_output(self._loglayer, "Info", "自动数据迁移检验完成")
 
         # ── 启动 ──
         homework_mode_on()
