@@ -31,8 +31,8 @@ import updater
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.2.15"
-VERSION_NUM = 1006002015
+VERSION = "1.6.2.16"
+VERSION_NUM = 1006002016
 tk = None
 
 
@@ -866,7 +866,7 @@ class HomeworkTool:
             except TypeError:
                 time_value = deadline_timestamp
         else:
-            time_value = time.strftime("%Y/%m/%d 22:10", time.localtime(time.time()))
+            time_value = time.strftime("%Y/%m/%d 22:30", time.localtime(time.time()))
 
         time_entry = Entry(
             new_window,
@@ -905,7 +905,7 @@ class HomeworkTool:
                     textvariable=StringVar(
                         time_select_frame,
                         value=time.strftime(
-                            "%Y/%m/%d 22:10",
+                            "%Y/%m/%d 22:30",
                             time.localtime(
                                 time.mktime(
                                     time.strptime(time_entry.get(), "%Y/%m/%d %H:%M")
@@ -927,7 +927,7 @@ class HomeworkTool:
                     textvariable=StringVar(
                         time_select_frame,
                         value=time.strftime(
-                            "%Y/%m/%d 22:10", time.localtime(time.time())
+                            "%Y/%m/%d 22:30", time.localtime(time.time())
                         ),
                     )
                 ),
@@ -943,7 +943,7 @@ class HomeworkTool:
                     textvariable=StringVar(
                         time_select_frame,
                         value=time.strftime(
-                            "%Y/%m/%d 22:10", time.localtime(time.time() + 86400)
+                            "%Y/%m/%d 22:30", time.localtime(time.time() + 86400)
                         ),
                     )
                 ),
@@ -959,7 +959,7 @@ class HomeworkTool:
                     textvariable=StringVar(
                         time_select_frame,
                         value=time.strftime(
-                            "%Y/%m/%d 22:10", time.localtime(time.time() + 86400 * 2)
+                            "%Y/%m/%d 22:30", time.localtime(time.time() + 86400 * 2)
                         ),
                     )
                 ),
@@ -975,7 +975,7 @@ class HomeworkTool:
                     textvariable=StringVar(
                         time_select_frame,
                         value=time.strftime(
-                            "%Y/%m/%d 22:10",
+                            "%Y/%m/%d 22:30",
                             time.localtime(
                                 time.mktime(
                                     time.strptime(time_entry.get(), "%Y/%m/%d %H:%M")
