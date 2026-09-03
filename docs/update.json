@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006002016,
-  "VERSION": "1.6.2.16",
-  "NAME": "时间参数调整以适应2026-2027 T-A-N2 (22:10 -> 22:30)",
-  "TYPE": "Additional"
+  "VERSION_NUM": 1006003000,
+  "VERSION": "1.6.3",
+  "NAME": "添加截止",
+  "TYPE": "Funtional"
 }

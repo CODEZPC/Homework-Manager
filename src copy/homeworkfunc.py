@@ -63,11 +63,9 @@ if getattr(sys, "frozen", False):
 
 TIME_OUT = 300
 
-def analyze_time(timestamp, emphasize="自动", word="收"):
+def analyze_time(timestamp, emphasize="自动"):
     """
-    计算目标时间与当前时间的关系，返回 (显示文案, 优先级数值) 元组。
-
-    word: 文案的动词后缀，默认为 "收"（开始收集）；计算截止时间时传入 "截止"。
+    计算目标时间与当前时间的关系，返回一个字符串表示目标时间的状态。
     """
 
     def emphasize_prefix(level):
@@ -97,39 +95,30 @@ def analyze_time(timestamp, emphasize="自动", word="收"):
     w = time.strftime("%w", time.localtime(timestamp))
     auto = emphasize == "自动"
     if timestamp == 0:
-        return (
-            "不收" if word == "收" else "未设截止",
-            0 if auto else emphasize_prefix(emphasize),
-        )
+        return ("不收", 0 if auto else emphasize_prefix(emphasize))
     elif timestamp < time.time() - TIME_OUT:
-        return (
-            "时间已过" if word == "收" else "已截止",
-            -1,
-        )
+        return ("时间已过", -1)
     elif timestamp < time.time() - 60:
-        return (f"现在{word}", 3)
+        return ("现在收", 3)
     elif timestamp < time.time():
-        return (f"现在{word}", 4)
+        return ("现在收", 4)
     elif timestamp < time.time() + TIME_OUT:
-        return (f"即将{word}", 1 if auto else emphasize_prefix(emphasize))
+        return ("即将收", 1 if auto else emphasize_prefix(emphasize))
     elif timestamp < time_day_start + 86400:
-        return (f"{t}{word}", 1 if auto else emphasize_prefix(emphasize))
+        return (f"{t}收", 1 if auto else emphasize_prefix(emphasize))
     elif timestamp < time_day_start + 86400 * 2:
-        return (f"明天{t}{word}", 1 if auto else emphasize_prefix(emphasize))
+        return (f"明天{t}收", 1 if auto else emphasize_prefix(emphasize))
     elif timestamp < time_day_start + 86400 * 3:
-        return (f"后天{t}{word}", 0 if auto else emphasize_prefix(emphasize))
+        return (f"后天{t}收", 0 if auto else emphasize_prefix(emphasize))
     elif timestamp < time_day_start + 86400 * (8 - int(week_now)):
-        return (f"周{we[int(w)]}{t}{word}", 0 if auto else emphasize_prefix(emphasize))
+        return (f"周{we[int(w)]}{t}收", 0 if auto else emphasize_prefix(emphasize))
     elif timestamp < time_day_start + 86400 * (15 - int(week_now)):
         return (
-            f"下周{we[int(w)]}{t}{word}",
+            f"下周{we[int(w)]}{t}收",
             0 if auto else emphasize_prefix(emphasize),
         )
     else:
-        return (
-            f"{time.strftime('%Y/%m/%d', time.localtime(timestamp))}{word}",
-            0,
-        )
+        return (f"{time.strftime('%Y/%m/%d', time.localtime(timestamp))}收", 0)
 
 def analyze_time_string(timestring):
     timestring = timestring.replace("：", ":")
@@ -194,41 +183,6 @@ def uri_classisland(uri, mode="run"):
     else:
         return False
 
-def _is_numeric_time(value):
-    """判断是否为数值时间（排除布尔值）。"""
-    return isinstance(value, (int, float)) and not isinstance(value, bool)
-
-
-def has_open_deadline(item, now=None):
-    """是否启用了截止时间且截止时间尚未到达（仍处于开放状态）。"""
-    if now is None:
-        now = time.time()
-    d = item.get("deadline", 0)
-    return _is_numeric_time(d) and d > now
-
-
-def collect_status(item, now=None):
-    """
-    返回作业条目的时间状态数值（语义与 analyze_time 返回的优先级一致，
-    供列表排序 / 置灰 / 高亮着色使用）。
-
-    区别：当启用了截止时间且截止未到、而“开始收集”时间已到或已过时，
-    仍按“现在收”(3) 处理，不会被 5 分钟超时误判为“时间已过”(-1)。
-    """
-    if now is None:
-        now = time.time()
-    t = item.get("time", 0)
-    em = item.get("emphasize", "自动")
-    if (
-        has_open_deadline(item, now)
-        and _is_numeric_time(t)
-        and t > 0
-        and t <= now
-    ):
-        return 3
-    return analyze_time(t, em)[1]
-
-
 def _sort_key(item):
     t = item.get("time", 0)
     e = item.get("emphasize", "自动")
@@ -237,12 +191,6 @@ def _sort_key(item):
         label, prio = analyze_time(t, e)
     except Exception:
         label, prio = (str(t), 0)
-
-    # 截止时间未到且已开始收集的作业按“现在收”处理（不因超时被置底）
-    try:
-        prio = collect_status(item)
-    except Exception:
-        pass
 
     # 数字时间：按优先级降序（因此返回 -prio 以实现降序），再按时间升序，再按文字
     if isinstance(t, (int, float)):

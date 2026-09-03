@@ -25,15 +25,14 @@ default_json.check()
 
 import help
 import homeworkfunc
-import dataupdate
 import menu
 import updater
 
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.3"
-VERSION_NUM = 1006003000
+VERSION = "1.6.2.16"
+VERSION_NUM = 1006002016
 tk = None
 
 
@@ -104,8 +103,6 @@ class HomeworkTool:
 
         # 各类定时器的 id（用于取消），初始化为 None
         self._upload_aid = None
-        self._rot_aid = None  # 截止时间轮播定时器
-        self._rot = 0  # 轮播相位（0=开始收集文案，1=截止时间文案）
 
         self.mousex, self.mousey = 0, 0
         self.load_amount = 0  # 负载量
@@ -113,9 +110,6 @@ class HomeworkTool:
 
         # 校验资源完整性
         homeworkfunc.resource_check(self.subject_codes)
-
-        # 自动升级旧版本 homework.json 数据（补齐 deadline 字段等）
-        dataupdate.migrate()
 
         # 显示
         self.draw_homework()
@@ -181,11 +175,6 @@ class HomeworkTool:
         # 取消之前计划的提醒（如果有）
         for i in self.reminder_schedule:
             tk.after_cancel(i)
-        self.reminder_schedule = []
-
-        # 取消截止时间轮播定时器
-        self._cancel_deadline_rotation()
-        self._rot = 0
 
         # 清理之前在 canvas 上的显示与时间显示
         try:
@@ -264,7 +253,7 @@ class HomeworkTool:
         for i, subj in enumerate(self.subject_codes):
             for k in self.data[subj]:
                 content = self.subject_display_names[i] + ":" + k["content"]
-                status = homeworkfunc.collect_status(k)
+                status = homeworkfunc.analyze_time(k["time"], k["emphasize"])[1]
                 all_items.append((content, status))
             if keyboard.is_pressed("tab"):
                 time.sleep(0.6)
@@ -310,9 +299,6 @@ class HomeworkTool:
         self._page_aid = tk.after(self._page_interval, self.canvas_roll)
         self.reminder_schedule.append(self._page_aid)
 
-        # 启动“开始收集 / 截止”文案轮播（每 5 秒）
-        self._start_deadline_rotation()
-
     def upload_time_display(self):
         """
         每分钟更新一次时间显示。
@@ -339,29 +325,28 @@ class HomeworkTool:
         upload = 0
         for i, j in enumerate(self.subject_codes):
             for k in self.data[j]:
-                status_int = homeworkfunc.collect_status(k)
-                time_text = self._time_cell_text(k)
+                time_status = homeworkfunc.analyze_time(k["time"], k["emphasize"])
                 self.time_list.append(
                     Label(
                         self.main_frame,
-                        text=time_text,
+                        text=time_status[0],
                         width=13,
                         justify="left",
                         anchor="e",
                         font=("HYWenHei-85W", 16),
                     )
                 )
-                if status_int >= 3:
+                if time_status[1] >= 3:
                     self.time_list[-1].config(bg="#C8C8C8", fg="#23272E")
-                    if status_int == 4:
+                    if time_status[1] == 4:
                         upload = 1
-                elif status_int == 2:
+                elif time_status[1] == 2:
                     self.time_list[-1].config(bg="#666666", fg="#FFFFFF")
-                elif status_int == 1:
+                elif time_status[1] == 1:
                     self.time_list[-1].config(bg="#23272E", fg="#C8C8C8")
-                elif status_int == 0:
+                elif time_status[1] == 0:
                     self.time_list[-1].config(bg="#23272E", fg=COLOR)
-                elif status_int == -1:
+                elif time_status[1] == -1:
                     self.time_list[-1].config(bg="#23272E", fg=COLOR)
                     try:
                         self.list_canvas.itemconfig(self.canvas_items[idx], fill=COLOR)
@@ -384,127 +369,6 @@ class HomeworkTool:
         # 只传递方法引用，由方法内部追踪 aid
         self._upload_aid = tk.after(remaining_seconds * 1000, self.upload_time_display)
         self.reminder_schedule.append(self._upload_aid)
-
-    def _deadline_of(self, item):
-        """读取作业项的截止时间戳；仅接受数值，返回 0 表示未启用截止时间。"""
-        try:
-            d = item.get("deadline", 0)
-        except Exception:
-            return 0
-        if isinstance(d, bool):
-            return 0
-        if isinstance(d, (int, float)):
-            return d
-        try:
-            return float(d)
-        except (TypeError, ValueError):
-            return 0
-
-    def _time_cell_text(self, item):
-        """
-        计算右侧时间单元格应显示的文案（含“开始收集 / 截止”轮播）。
-
-        - 未启用截止时间：沿用原有“开始收集”显示逻辑；
-        - 启用了截止时间：
-            · 尚未开始收集、距开始尚早 → “xx:xx收”与“xx:xx截止”轮播；
-            · 已开始收集（即使超过 5 分钟）但截止未到 → “现在收”与“xx:xx截止”轮播；
-            · 未设开始收集（不收）→ 单独显示“xx:xx截止”；
-            · 截止已到 → 恢复原有“时间已过”等逻辑。
-        """
-        t = item.get("time", 0)
-        d = self._deadline_of(item)
-        em = item.get("emphasize", "自动")
-        now = time.time()
-
-        num_t = isinstance(t, (int, float)) and not isinstance(t, bool)
-        num_d = isinstance(d, (int, float)) and not isinstance(d, bool)
-        open_deadline = num_d and d > now
-
-        # 已开始收集、截止未到 → 轮播 “现在收” / “xx:xx截止”
-        if num_t and t > 0 and t <= now and open_deadline:
-            if getattr(self, "_rot", 0) == 0:
-                return "现在收"
-            return homeworkfunc.analyze_time(d, em, word="截止")[0]
-
-        # “不收”但启用了截止时间 → 单独显示截止文案
-        if num_t and t <= 0 and num_d and d > 0:
-            return homeworkfunc.analyze_time(d, em, word="截止")[0]
-
-        # 尚未开始收集、距开始仍较久且启用了截止时间 → 轮播 收/截止
-        if num_t and t > now + homeworkfunc.TIME_OUT and open_deadline:
-            if getattr(self, "_rot", 0) == 0:
-                return homeworkfunc.analyze_time(t, em)[0]
-            return homeworkfunc.analyze_time(d, em, word="截止")[0]
-
-        # 其余情况：沿用原有文案（即将收 / 时间已过 / 自定义文本等）
-        return homeworkfunc.analyze_time(t, em)[0]
-
-    def _start_deadline_rotation(self):
-        """启动“开始收集 / 截止”文案轮播（每 5 秒切换一次）。"""
-        self._cancel_deadline_rotation()
-        self._rot = 0
-        self._rot_aid = tk.after(5000, self._deadline_rotation_tick)
-        self.reminder_schedule.append(self._rot_aid)
-
-    def _cancel_deadline_rotation(self):
-        """取消已排程的截止时间轮播定时器。"""
-        aid = getattr(self, "_rot_aid", None)
-        if aid is not None:
-            try:
-                tk.after_cancel(aid)
-            except Exception:
-                pass
-            try:
-                self.reminder_schedule.remove(aid)
-            except Exception:
-                pass
-            self._rot_aid = None
-
-    def _deadline_rotation_tick(self):
-        """每 5 秒轮播一次：就地刷新各时间 Label 的文案，并在状态切换时同步样式。"""
-        self._rot = 1 - getattr(self, "_rot", 0)
-        idx = 0
-        try:
-            for subj in self.subject_codes:
-                for k in self.data.get(subj, []):
-                    if idx >= len(self.time_list):
-                        break
-                    try:
-                        widget = self.time_list[idx]
-                        status_int = homeworkfunc.collect_status(k)
-                        text = self._time_cell_text(k)
-                        if widget.cget("text") != text:
-                            widget.config(text=text)
-                        if status_int >= 3:
-                            bg, fg = "#C8C8C8", "#23272E"
-                        elif status_int == 2:
-                            bg, fg = "#666666", "#FFFFFF"
-                        elif status_int == 1:
-                            bg, fg = "#23272E", "#C8C8C8"
-                        else:
-                            bg, fg = "#23272E", COLOR
-                        if widget.cget("bg") != bg or widget.cget("fg") != fg:
-                            widget.config(bg=bg, fg=fg)
-                        if status_int == -1:
-                            try:
-                                self.list_canvas.itemconfig(
-                                    self.canvas_items[idx], fill=COLOR
-                                )
-                            except Exception:
-                                pass
-                    except Exception:
-                        pass
-                    idx += 1
-        except Exception:
-            pass
-        old = getattr(self, "_rot_aid", None)
-        self._rot_aid = tk.after(5000, self._deadline_rotation_tick)
-        if old is not None:
-            try:
-                self.reminder_schedule.remove(old)
-            except Exception:
-                pass
-        self.reminder_schedule.append(self._rot_aid)
 
     def roll_show(self):
         # Deprecated wrapper: call new canvas_roll
@@ -891,14 +755,8 @@ class HomeworkTool:
                         t = float(item.get("time", 0))
                     except Exception:
                         t = 0
-                # 时间为0表示不收，跳过；过期规则：比当前时间早超过一定时间视为已过。
-                # 但若启用了截止时间且截止未到，即使开始收集已超时也不清理。
-                expired = (
-                    t != 0
-                    and t < time.time() - homeworkfunc.TIME_OUT
-                    and not homeworkfunc.has_open_deadline(item)
-                )
-                if expired:
+                # 时间为0表示不收，跳过；过期规则：比当前时间早超过一定时间视为已过
+                if t != 0 and t < time.time() - homeworkfunc.TIME_OUT:
                     removed += 1
                 else:
                     new_list.append(item)
@@ -922,8 +780,7 @@ class HomeworkTool:
         emphasize_index=None,
         subject_index=None,
         content_text=None,
-        collection_timestamp=None,
-        existing_deadline=None,
+        deadline_timestamp=None,
         replace_target=None,
     ):
         new_window = Toplevel(tk)
@@ -994,20 +851,20 @@ class HomeworkTool:
             content_entry.insert(0, content_text)
 
         Label(
-            new_window, text="开始收集", bg="#23272E", font=("HYWenHei-85W", 16)
-        ).grid(row=3, column=1)
+            new_window, text="截止时间", bg="#23272E", font=("HYWenHei-85W", 16)
+        ).grid(row=3, column=1, rowspan=2)
 
-        # * 重要：时间解析位（开始收集时间）
-        if collection_timestamp is not None:
+        # * 重要：时间解析位
+        if deadline_timestamp is not None:
             try:
-                if collection_timestamp == 0:
+                if deadline_timestamp == 0:
                     raise TypeError
 
                 time_value = time.strftime(
-                    "%Y/%m/%d %H:%M", time.localtime(collection_timestamp)
+                    "%Y/%m/%d %H:%M", time.localtime(deadline_timestamp)
                 )
             except TypeError:
-                time_value = collection_timestamp
+                time_value = deadline_timestamp
         else:
             time_value = time.strftime("%Y/%m/%d 22:30", time.localtime(time.time()))
 
@@ -1136,128 +993,8 @@ class HomeworkTool:
         for i in time_select:
             i.pack(side="left", expand=True)
 
-        # ──────────── 截止时间（可选，由开关启用，默认关闭）────────────
-        Label(
-            new_window, text="截止时间", bg="#23272E", font=("HYWenHei-85W", 16)
-        ).grid(row=5, column=1)
-
-        # 解析已有截止时间的初值
-        _deadline_value = time.strftime(
-            "%Y/%m/%d 22:30", time.localtime(time.time())
-        )
-        try:
-            _deadline_existing = (
-                existing_deadline is not None
-                and not isinstance(existing_deadline, bool)
-                and float(existing_deadline) > 0
-            )
-        except Exception:
-            _deadline_existing = False
-        if _deadline_existing:
-            _deadline_value = time.strftime(
-                "%Y/%m/%d %H:%M",
-                time.localtime(float(existing_deadline)),
-            )
-        deadline_on = _deadline_existing
-
-        # 截止时间输入区域（含快捷按钮）；开关关闭时隐藏
-        deadline_area = Frame(new_window, relief=FLAT)
-        # 不加 sticky，使截止输入与“开始收集”输入行对齐且水平居中
-        deadline_area.grid(row=6, column=2)
-        deadline_entry = Entry(
-            deadline_area,
-            width=20,
-            textvariable=StringVar(deadline_area, value=_deadline_value),
-            relief=FLAT,
-            justify="center",
-            font=("HYWenHei-85W", 16),
-        )
-        deadline_entry.pack(side="top", anchor="center")
-
-        deadline_preset = Frame(deadline_area, relief=FLAT)
-        deadline_preset.pack(side="top", anchor="center")
-
-        def _deadline_apply(value):
-            deadline_entry.configure(
-                textvariable=StringVar(deadline_area, value=value)
-            )
-
-        def _deadline_offset(days):
-            try:
-                base = time.strptime(deadline_entry.get(), "%Y/%m/%d %H:%M")
-            except Exception:
-                base = time.localtime(time.time())
-            _deadline_apply(
-                time.strftime(
-                    "%Y/%m/%d 22:30",
-                    time.localtime(time.mktime(base) + days * 86400),
-                )
-            )
-
-        for _label, _cmd in [
-            ("-1天", lambda: _deadline_offset(-1)),
-            (
-                "今天",
-                lambda: _deadline_apply(
-                    time.strftime("%Y/%m/%d 22:30", time.localtime(time.time()))
-                ),
-            ),
-            (
-                "明天",
-                lambda: _deadline_apply(
-                    time.strftime(
-                        "%Y/%m/%d 22:30", time.localtime(time.time() + 86400)
-                    )
-                ),
-            ),
-            (
-                "后天",
-                lambda: _deadline_apply(
-                    time.strftime(
-                        "%Y/%m/%d 22:30", time.localtime(time.time() + 86400 * 2)
-                    )
-                ),
-            ),
-            ("+1天", lambda: _deadline_offset(1)),
-        ]:
-            Button(
-                deadline_preset,
-                text=_label,
-                command=_cmd,
-                relief=FLAT,
-                font=("HYWenHei-85W", 16),
-            ).pack(side="left", expand=True)
-
-        deadline_switch = Button(
-            new_window,
-            text="已启用" if deadline_on else "未启用",
-            fg="#005EFF" if deadline_on else COLOR,
-            relief=FLAT,
-            font=("HYWenHei-85W", 16),
-            command=lambda: None,
-        )
-        deadline_switch.grid(row=5, column=2, sticky="w")
-
-        def toggle_deadline():
-            nonlocal deadline_on
-            deadline_on = not deadline_on
-            deadline_switch.config(
-                text="已启用" if deadline_on else "未启用",
-                fg="#005EFF" if deadline_on else COLOR,
-            )
-            if deadline_on:
-                deadline_area.grid()
-            else:
-                deadline_area.grid_remove()
-            _reposition()
-
-        deadline_switch.config(command=toggle_deadline)
-
-        if not deadline_on:
-            deadline_area.grid_remove()
-
         Label(new_window, text="优先级", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
-            row=7, column=1
+            row=5, column=1
         )
         emphasize_var = StringVar(new_window)
         if emphasize_index is not None and 0 <= emphasize_index < len(
@@ -1267,7 +1004,7 @@ class HomeworkTool:
         else:
             emphasize_var.set(self.emphasize_levels[0])
         OptionMenu(new_window, emphasize_var, *self.emphasize_levels).grid(
-            row=7, column=2
+            row=5, column=2
         )
 
         def submit():
@@ -1281,53 +1018,31 @@ class HomeworkTool:
             new_subject_index = self.subject_display_names.index(subject_var)
             new_subject_key = self.subject_codes[new_subject_index]
             content = content_entry.get()
-            collection_str = time_entry.get()
+            deadline_str = time_entry.get()
             new_emphasize = emphasize_var.get()
 
-            # * 重要：时间解析位（开始收集时间）
+            # * 重要：时间解析位
             try:
-                if (
-                    collection_str == "0"
-                    or collection_str == ""
-                    or collection_str == "不收"
-                ):
-                    new_collection_ts = 0
+                if deadline_str == "0" or deadline_str == "" or deadline_str == "不收":
+                    new_deadline_ts = 0
                     raise KeyboardInterrupt
 
-                new_collection_ts = int(
+                new_deadline_ts = int(
                     time.mktime(
                         time.strptime(
-                            homeworkfunc.analyze_time_string(collection_str),
+                            homeworkfunc.analyze_time_string(deadline_str),
                             "%Y/%m/%d %H:%M",
                         )
                     )
                 )
             except ValueError:
-                new_collection_ts = collection_str
+                new_deadline_ts = deadline_str
             except KeyboardInterrupt:
                 pass
 
-            # 截止时间：仅当开关开启时保存（无效输入按 0 = 未设置处理）
-            new_deadline_ts = 0
-            if deadline_on:
-                _dstr = deadline_entry.get()
-                if _dstr not in ("0", "", "不收"):
-                    try:
-                        new_deadline_ts = int(
-                            time.mktime(
-                                time.strptime(
-                                    homeworkfunc.analyze_time_string(_dstr),
-                                    "%Y/%m/%d %H:%M",
-                                )
-                            )
-                        )
-                    except (ValueError, TypeError):
-                        new_deadline_ts = 0
-
             new_item = {
                 "content": content,
-                "time": new_collection_ts,
-                "deadline": new_deadline_ts,
+                "time": new_deadline_ts,
                 "emphasize": new_emphasize,
             }
             if replace_target:
@@ -1362,32 +1077,23 @@ class HomeworkTool:
             command=submit,
             relief=FLAT,
             font=("HYWenHei-85W", 16),
-        ).grid(row=8, column=2, sticky="e")
+        ).grid(row=6, column=2, sticky="e")
         Button(
             new_window,
             text="取消",
             command=new_window.destroy,
             relief=FLAT,
             font=("HYWenHei-85W", 16),
-        ).grid(row=8, column=2, sticky="w")
-
-        # 窗口定位：居中偏下并保证完整位于屏幕内。
-        # （新增“截止时间”开关 / 输入行后窗口变高，切换开关需随之重新定位。）
-        def _reposition():
-            new_window.update_idletasks()
-            sw = new_window.winfo_screenwidth()
-            sh = new_window.winfo_screenheight()
-            ww = max(60, new_window.winfo_reqwidth())
-            wh = max(40, new_window.winfo_reqheight())
-            x = (sw - ww) // 2
-            y = int((sh - wh) * 0.72)  # 0.5 为正中，这里略偏下
-            if y < 10:
-                y = 10
-            if y + wh > sh - 10:
-                y = max(10, sh - wh - 40)
-            new_window.geometry(f"{ww}x{wh}+{x}+{y}")
-
-        _reposition()
+        ).grid(row=6, column=2, sticky="w")
+        # 将窗口居中偏下显示（不改变窗口大小）
+        new_window.update_idletasks()
+        sw = new_window.winfo_screenwidth()
+        sh = new_window.winfo_screenheight()
+        ww = new_window.winfo_width()
+        wh = new_window.winfo_height()
+        x = (sw - ww) // 2
+        y = int((sh - wh) * 0.8)  # 0.6 表示垂直方向偏下（0.5 为正中）
+        new_window.geometry(f"+{x}+{y}")
 
     def delete_homework(self, index):
         if not messagebox.askyesno("作业管理器·删除提示", "确定要删除吗？"):
@@ -1413,16 +1119,14 @@ class HomeworkTool:
                     except ValueError:
                         subject_index = 0
                     content_text = j.get("content", "")
-                    collection_ts = j.get("time", 0)
-                    existing_deadline = j.get("deadline", 0)
+                    deadline_ts = j.get("time", 0)
                     emphasize_index = self.emphasize_levels.index(j["emphasize"])
                     orig_index = self.data[subject_key].index(j)
                     self.new_homework(
                         emphasize_index=emphasize_index,
                         subject_index=subject_index,
                         content_text=content_text,
-                        collection_timestamp=collection_ts,
-                        existing_deadline=existing_deadline,
+                        deadline_timestamp=deadline_ts,
                         replace_target=(subject_key, orig_index),
                     )
                     return
