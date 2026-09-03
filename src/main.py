@@ -32,8 +32,8 @@ import updater
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.3"
-VERSION_NUM = 1006003000
+VERSION = "1.6.3.1"
+VERSION_NUM = 1006003001
 tk = None
 
 
@@ -423,17 +423,17 @@ class HomeworkTool:
         # 已开始收集、截止未到 → 轮播 “现在收” / “xx:xx截止”
         if num_t and t > 0 and t <= now and open_deadline:
             if getattr(self, "_rot", 0) == 0:
-                return "现在收"
+                return "可提交"
             return homeworkfunc.analyze_time(d, em, word="截止")[0]
 
         # “不收”但启用了截止时间 → 单独显示截止文案
         if num_t and t <= 0 and num_d and d > 0:
             return homeworkfunc.analyze_time(d, em, word="截止")[0]
 
-        # 尚未开始收集、距开始仍较久且启用了截止时间 → 轮播 收/截止
+        # 尚未开始收集、距开始仍较久且启用了截止时间 → 轮播 起/截止
         if num_t and t > now + homeworkfunc.TIME_OUT and open_deadline:
             if getattr(self, "_rot", 0) == 0:
-                return homeworkfunc.analyze_time(t, em)[0]
+                return homeworkfunc.analyze_time(t, em)[0][:-1] + "起"
             return homeworkfunc.analyze_time(d, em, word="截止")[0]
 
         # 其余情况：沿用原有文案（即将收 / 时间已过 / 自定义文本等）
