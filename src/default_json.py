@@ -1,42 +1,102 @@
 import json
+import os
 
 KEYS = ["Subjects"]
 VALUES = [{"Default": "Default"}]
 
+SETTING_FILE = "setting.json"
+HOMEWORK_FILE = "homework.json"
+
+# homework.json 中的元数据键，不参与科目恢复 / 同步
+RESERVED_META = {"VER"}
+
+
+def _load_json(path):
+    """读取 JSON；文件缺失或解析失败返回 (None, False)。"""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f), True
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        return None, False
+
+
+def _homework_subject_keys(hw):
+    """
+    提取 homework.json 中可视为“科目”的键：
+    值为 list 且非保留元数据键（避免把 VER 等误当科目）。
+    """
+    if not isinstance(hw, dict):
+        return []
+    return [
+        k for k, v in hw.items()
+        if k not in RESERVED_META and isinstance(v, list)
+    ]
+
+
+def _normalize_subjects(subjects):
+    """确保 subjects 为 dict 且非空；否则返回 None。"""
+    if isinstance(subjects, dict) and len(subjects) > 0:
+        return subjects
+    return None
+
 
 def check():
-    try:
-        with open("setting.json", "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except (FileNotFoundError, json.decoder.JSONDecodeError):
-        open("setting.json", "w")
+    """
+    配置自检 / 修复（程序启动时自动调用）：
+
+    1. 确保 setting.json 存在且可解析；
+    2. 若缺少科目配置（Subjects），从 homework.json 的科目列表键恢复
+       （跳过 VER 等元数据键）；homework 也缺失时回退默认科目；
+    3. 若 Subjects 已存在，把 homework.json 中存在但尚未配置的科目键
+       并入配置（防止该键数据丢失）；
+    4. 仅在确有变化 / 文件缺失时才写回 setting.json。
+    """
+    data, setting_ok = _load_json(SETTING_FILE)
+    if not isinstance(data, dict):
         data = {}
-    # 如果缺少 Subjects 项，优先从 homework.json 修复（若存在），否则保持原有默认逻辑
-    def has_subjects(d: dict) -> bool:
-        return ("Subjects" in d) or ("subjects" in d)
+    changed = not setting_ok
 
-    if not has_subjects(data):
-        repaired = False
+    # 读取 homework.json（可能不存在）
+    hw, _ = _load_json(HOMEWORK_FILE)
+    if not isinstance(hw, dict):
+        hw = {}
+
+    # 兼容旧版小写 "subjects"，统一归一到 "Subjects"
+    subjects = data.get("Subjects")
+    if subjects is None:
+        subjects = data.get("subjects")
+        if isinstance(subjects, dict):
+            changed = True  # 需要迁移到 "Subjects"
+        else:
+            subjects = None
+    subjects = _normalize_subjects(subjects)
+
+    if subjects is None:
+        # 缺少科目配置：优先从 homework.json 恢复（仅 list 键，不含 VER）
+        subjects = {k: k for k in _homework_subject_keys(hw)}
+        if not subjects:
+            # 回退为默认科目
+            subjects = dict(VALUES[0])
+        changed = True
+    else:
+        # 已存在配置：把 homework 中未配置的科目键并入，避免数据丢失
+        known_codes = set(subjects.values())
+        for k in _homework_subject_keys(hw):
+            if k not in known_codes and k not in subjects:
+                subjects[k] = k
+                changed = True
+
+    # 统一写回 "Subjects"
+    data["Subjects"] = subjects
+    if "subjects" in data:
+        del data["subjects"]
+
+    if changed or not os.path.exists(SETTING_FILE):
         try:
-            with open("homework.json", "r", encoding="utf-8") as hf:
-                hw = json.load(hf)
-            # 将 homework.json 的键作为 Subjects 条目，使用字典映射格式 {"科目显示名": "代码"}
-            # 目前仅有代码键，因此将键和值都设为相同的代码（例如 "C": "C"）
-            if isinstance(hw, dict):
-                subjects_map = {k: k for k in hw.keys()}
-                if subjects_map:
-                    data["Subjects"] = subjects_map
-                    repaired = True
-        except (FileNotFoundError, json.decoder.JSONDecodeError):
-            repaired = False
-
-        if not repaired:
-            # 回退为原有的默认值
-            data = {}
-            for i in range(len(KEYS)):
-                data[KEYS[i]] = VALUES[i]
-    with open("setting.json", "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+            with open(SETTING_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

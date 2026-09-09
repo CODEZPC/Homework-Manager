@@ -26,14 +26,15 @@ default_json.check()
 import help
 import homeworkfunc
 import dataupdate
+import backup
 import menu
 import updater
 
 COLOR = "#767F89"
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.3"
-VERSION_NUM = 1006003000
+VERSION = "1.6.4"
+VERSION_NUM = 1006004000
 tk = None
 
 
@@ -113,6 +114,10 @@ class HomeworkTool:
 
         # 校验资源完整性
         homeworkfunc.resource_check(self.subject_codes)
+
+        # 启动前自动备份核心数据（后续升级 / 修复可能改写 homework.json）
+        backup.backup_file("homework.json", tag="homework")
+        backup.backup_file("setting.json", tag="setting")
 
         # 自动升级旧版本 homework.json 数据（补齐 deadline 字段等）
         dataupdate.migrate()
@@ -215,14 +220,9 @@ class HomeworkTool:
             if k not in known_keys and isinstance(self.data[k], list)
         ]
         if extra_keys:
-            messagebox.showwarning(
-                "作业管理器·数据警告",
-                f"homework.json 中包含未配置的科目键：{', '.join(extra_keys)}，"
-                f"已自动忽略。\n如需使用，请在设置中添加对应科目。"
-            )
-            for k in extra_keys:
-                del self.data[k]
-            _data_fixed = True
+            # 自动把 homework.json 中尚未配置的科目并入配置（而非删除），
+            # 避免“setting 中无、homework 中有”的科目数据丢失
+            self._import_extra_subjects(extra_keys)
         # 找出缺失键（存在于 subject_codes 但不在 JSON 中）
         missing_keys = [k for k in self.subject_codes if k not in self.data]
         if missing_keys:
@@ -904,6 +904,8 @@ class HomeworkTool:
                     new_list.append(item)
             self.data[key] = new_list
         if removed > 0:
+            # 批量删除前备份，便于恢复
+            backup.backup_file(DATA, tag="homework")
             with open(DATA, "w", encoding="utf-8") as f:
                 json.dump(self.data, f, ensure_ascii=False, indent=4)
             messagebox.showinfo(
@@ -1389,6 +1391,41 @@ class HomeworkTool:
 
         _reposition()
 
+    def _import_extra_subjects(self, extra_keys):
+        """
+        把 homework.json 中存在但尚未配置到 setting.json 的科目键自动并入，
+        并刷新内存中的科目列表，使数据在本会话即可显示（而不是被丢弃）。
+        """
+        try:
+            with open("setting.json", "r", encoding="utf-8") as f:
+                settings = json.load(f)
+        except Exception:
+            settings = {}
+        if not isinstance(settings, dict):
+            settings = {}
+        subjects = settings.get("Subjects")
+        if not isinstance(subjects, dict):
+            subjects = {}
+        known_codes = set(subjects.values())
+        changed = False
+        for k in extra_keys:
+            if k in ("VER",):
+                continue
+            if k not in known_codes and k not in subjects:
+                subjects[k] = k
+                changed = True
+        if changed:
+            settings["Subjects"] = subjects
+            try:
+                with open("setting.json", "w", encoding="utf-8") as f:
+                    json.dump(settings, f, ensure_ascii=False, indent=4)
+            except Exception:
+                pass
+            # 刷新模块级科目表，让本会话立即生效
+            homeworkfunc.load_subjects()
+            self.subject_codes = list(homeworkfunc.SUBJECT_CODES)
+            self.subject_display_names = list(homeworkfunc.SUBJECT_DISPLAY_NAMES)
+
     def delete_homework(self, index):
         if not messagebox.askyesno("作业管理器·删除提示", "确定要删除吗？"):
             return
@@ -1397,6 +1434,8 @@ class HomeworkTool:
             for j in self.data[i]:
                 if count == index:
                     self.data[i].remove(j)
+                    # 删除前备份，便于恢复
+                    backup.backup_file(DATA, tag="homework")
                     with open(DATA, "w", encoding="utf-8") as f:
                         json.dump(self.data, f, ensure_ascii=False, indent=4)
                     self.draw_homework()

@@ -5,6 +5,7 @@ import json
 import os
 
 import main
+import backup
 
 
 class Menu:
@@ -36,27 +37,45 @@ class Menu:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
     def _sync_homework_json(self):
-        """确保 homework.json 中的科目键与 Subjects 完全一致：
-        新增键 → 初始化为 []；移除不在 Subjects 中的键。"""
+        """确保 homework.json 中包含所有已配置科目键（缺失则初始化为 []）。
+
+        注意：不做任何删除——homework.json 中可能存在未被配置的旧科目数据，
+        删除会丢失数据，故统一交由启动时的配置修复自动并入。
+        """
         try:
             with open("homework.json", "r", encoding="utf-8") as f:
                 hw_data = json.load(f)
+            if not isinstance(hw_data, dict):
+                return
         except Exception:
-            hw_data = {}
+            return  # 文件缺失或损坏时不覆盖
 
-        valid_codes = set(self._subjects.values())
-        existing_codes = set(hw_data.keys())
+        changed = False
+        for code in self._subjects.values():
+            if code not in hw_data:
+                hw_data[code] = []
+                changed = True
+        if changed:
+            with open("homework.json", "w", encoding="utf-8") as f:
+                json.dump(hw_data, f, ensure_ascii=False, indent=4)
 
-        # 添加新键
-        for code in valid_codes - existing_codes:
-            hw_data[code] = []
+    def _remove_homework_key(self, code):
+        """仅从 homework.json 中移除指定科目的键（用于科目删除）。
 
-        # 删除多余键
-        for code in existing_codes - valid_codes:
+        只删除 list 类型的科目键；VER 等元数据键不会被误删。
+        """
+        try:
+            with open("homework.json", "r", encoding="utf-8") as f:
+                hw_data = json.load(f)
+            if not isinstance(hw_data, dict) or code not in hw_data:
+                return
+            if not isinstance(hw_data[code], list):
+                return
             del hw_data[code]
-
-        with open("homework.json", "w", encoding="utf-8") as f:
-            json.dump(hw_data, f, ensure_ascii=False, indent=4)
+            with open("homework.json", "w", encoding="utf-8") as f:
+                json.dump(hw_data, f, ensure_ascii=False, indent=4)
+        except Exception:
+            pass
 
     def _refresh_listbox(self):
         """刷新科目列表显示。"""
@@ -92,6 +111,14 @@ class Menu:
         if not code or not code.strip():
             return
         code = code.strip().upper()
+
+        if code == "VER":
+            messagebox.showwarning(
+                "作业管理器·错误",
+                "VER 为系统保留键名，不能用作科目键。",
+                parent=self.menu_frame,
+            )
+            return
 
         if code in self._subjects.values():
             messagebox.showwarning(
@@ -149,6 +176,14 @@ class Menu:
             new_code = new_code.strip().upper()
             if not new_code:
                 new_code = old_code
+
+        if new_code == "VER" and new_code != old_code:
+            messagebox.showwarning(
+                "作业管理器·错误",
+                "VER 为系统保留键名，不能用作科目键。",
+                parent=self.menu_frame,
+            )
+            return
 
         if new_code != old_code and new_code in self._subjects.values():
             messagebox.showwarning(
@@ -220,9 +255,12 @@ class Menu:
         ):
             return
 
+        # 删除前备份该科目数据，便于恢复
+        backup.backup_file("homework.json", tag="homework")
+
         del self._subjects[name]
         self._save_subjects_to_settings()
-        self._sync_homework_json()
+        self._remove_homework_key(code)
         self._refresh_listbox()
         self._needs_restart = True
 

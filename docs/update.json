@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006003000,
-  "VERSION": "1.6.3",
-  "NAME": "添加截止",
-  "TYPE": "Funtional"
+  "VERSION_NUM": 1006004000,
+  "VERSION": "1.6.4",
+  "NAME": "数据安全性修复",
+  "TYPE": "Bugfix (Serious, Force)"
 }

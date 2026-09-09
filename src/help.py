@@ -71,10 +71,10 @@ HELP = [
                 "数据文件结构": '数据文件（homework.json）结构\n\n{\n    "VER": 3,                  // 数据版本号，用于数据迁移\n    "C": [                      // 科目代码为键\n        {                       // 每个作业为一个对象\n            "content": "作业内容",\n            "time": 1762560000,  // 开始收集时间：Unix 时间戳（秒），0=不收，字符串=自定义信息\n            "deadline": 1762563600, // 截止时间（可选）：Unix 时间戳（秒），0=未启用\n            "emphasize": "自动"   // 优先级：自动/很低/低/标准/高\n        }\n    ],\n    "M": [],\n    ...\n}\n\n注意：time 字段可以是整数时间戳，也可以是任意文本字符串，后者会直接作为自定义信息显示。',
             },
             {
-                "配置文件结构": '配置文件（setting.json）结构\n\n{\n    "Subjects": {              // 科目定义\n        "语文 ": "C",\n        "数学 ": "M",\n        ...\n    }\n}\n\nSubjects 字典的键为科目显示名称，值为科目代码。可通过菜单面板中的科目管理功能进行修改。若文件不存在或缺少 Subjects 项，default_json.py 会在程序启动时自动生成。',
+                "配置文件结构": '配置文件（setting.json）结构\n\n{\n    "Subjects": {              // 科目定义\n        "语文 ": "C",\n        "数学 ": "M",\n        ...\n    }\n}\n\nSubjects 字典的键为科目显示名称，值为科目代码。可通过菜单面板中的科目管理功能进行修改。若文件不存在或缺少 Subjects 项，default_json.py 会在程序启动时自动生成；若 homework.json 中存在未配置的科目键（列表型，VER 等元数据键除外），也会自动并入科目配置，避免数据丢失。',
             },
             {
-                "数据迁移": '数据迁移\n\n程序启动时 dataupdate.migrate() 会自动将 homework.json 升级到当前数据版本（VER 3）：\n\n- 版本 0→1：为所有作业添加 emphasize（优先级）字段，默认值为“自动”\n- 版本 1→2：将旧优先级名称（Ignored/Unimportant/Standard/Urgent）转换为新名称（很低/低/标准/高）\n- 版本 2→3：为每个作业新增 deadline（截止时间）字段，旧数据默认 0（未启用）；time 字段视为“开始收集时间”\n- 兼容极旧格式：纯字符串条目自动转为 {content, time, deadline, emphasize} 结构\n\n数据迁移为自动过程，无需用户手动干预。',
+                "数据迁移": '数据迁移\n\n程序启动时 dataupdate.migrate() 会自动将 homework.json 升级到当前数据版本（VER 3）：\n\n- 版本 0→1：为所有作业添加 emphasize（优先级）字段，默认值为“自动”\n- 版本 1→2：将旧优先级名称（Ignored/Unimportant/Standard/Urgent）转换为新名称（很低/低/标准/高）\n- 版本 2→3：为每个作业新增 deadline（截止时间）字段，旧数据默认 0（未启用）；time 字段视为“开始收集时间”\n- 兼容极旧格式：纯字符串条目自动转为 {content, time, deadline, emphasize} 结构\n\n数据迁移为自动过程，无需用户手动干预。备份：程序每次启动会先把 homework.json / setting.json 自动备份到程序目录的 backup/ 文件夹（内容未变化不重复备份，自动保留最近 20 份），可在数据异常时手动恢复。',
             },
         ]
     },
