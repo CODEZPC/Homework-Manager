@@ -1,0 +1,35 @@
+{
+    "C": [],
+    "M": [],
+    "E": [],
+    "P1": [],
+    "H1": [],
+    "G1": [],
+    "PH1": [],
+    "PH2": [],
+    "CH2": [],
+    "B1": [],
+    "CH1": [],
+    "OTH": [],
+    "NTE": [
+        {
+            "content": "",
+            "time": 1789482600,
+            "deadline": 0,
+            "emphasize": "自动"
+        },
+        {
+            "content": "",
+            "time": 1789482600,
+            "deadline": 0,
+            "emphasize": "自动"
+        },
+        {
+            "content": "",
+            "time": 1789655400,
+            "deadline": 0,
+            "emphasize": "自动"
+        }
+    ],
+    "VER": 3
+}

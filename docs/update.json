@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1006004000,
-  "VERSION": "1.6.4",
-  "NAME": "数据安全性修复",
-  "TYPE": "Bugfix (Serious, Force)"
+  "VERSION_NUM": 1007000000,
+  "VERSION": "1.7.0",
+  "NAME": "UI重构",
+  "TYPE": "Appearence"
 }

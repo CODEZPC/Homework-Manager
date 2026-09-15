@@ -230,8 +230,22 @@ def collect_status(item, now=None):
 
 
 def _sort_key(item):
+    """
+    作业排序键（数值越小越靠前），用于每个科目内部的稳定排序。
+
+    排序规则：
+    1. 状态优先级降序（现在收 / 可提交 > 即将收 / 标准 > 低 > 时间已过）；
+    2. 同一优先级内按“有无有效时间”分组：
+       有开始收集时间 → 不收（time <= 0） → 自定义文本；
+    3. 有时间者再按关键时间升序：
+       - 尚未开始收集（time > now）→ 按开始收集时间升序；
+       - 已开始收集（含超过 5 分钟）且截止未到 → 按截止时间升序（越近越靠前）；
+       - 其余 → 按开始收集时间升序。
+    """
     t = item.get("time", 0)
     e = item.get("emphasize", "自动")
+    d = item.get("deadline", 0)
+
     # 使用 analyze_time 获取优先级（数字越大优先越高），随后按时间再按文字排序
     try:
         label, prio = analyze_time(t, e)
@@ -244,12 +258,28 @@ def _sort_key(item):
     except Exception:
         pass
 
-    # 数字时间：按优先级降序（因此返回 -prio 以实现降序），再按时间升序，再按文字
-    if isinstance(t, (int, float)):
-        return (-prio, t, label)
+    now = time.time()
 
-    # 非数字时间（字符串等）：放到数字时间之后，按优先级降序，再按文字
-    return (-prio, float("inf"), str(label))
+    if _is_numeric_time(t) and t > 0:
+        # kind 0：有有效的开始收集时间
+        kind = 0
+        if t > now:
+            phase = 1  # 尚未开始收集 → 按开始收集时间升序
+            ts = t
+        else:
+            phase = 0  # 已开始收集 / 已过
+            if _is_numeric_time(d) and d > now:
+                ts = d  # 可提交阶段 → 按截止时间升序（越近越靠前）
+            else:
+                ts = t
+    elif _is_numeric_time(t):
+        # kind 1：不收（time <= 0），排在有时间的作业之后
+        kind, phase, ts = 1, 0, 0
+    else:
+        # kind 2：自定义文本，排在最后
+        kind, phase, ts = 2, 0, 0
+
+    return (-prio, kind, phase, ts, str(label))
 
 def speed_test():
     a = 0

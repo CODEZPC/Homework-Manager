@@ -6,6 +6,7 @@ import os
 
 import main
 import backup
+import theme
 
 
 class Menu:
@@ -306,21 +307,27 @@ class Menu:
         self.close_menu = Button(
             self.menu_top_frame,
             text="退出菜单",
-            fg=COLOR,
+            fg=theme.MUTED,
             font=("汉仪文黑-85W", 14),
             relief=FLAT,
             command=self.exit,
         )
-        self.close_menu.pack(side="right")
+        theme.style_button(
+            self.close_menu, "normal", padx=14, pady=4, font=("汉仪文黑-85W", 14)
+        )
+        self.close_menu.pack(side="right", padx=(2, 14), pady=6)
 
         # ── 科目管理标题 ──
         subject_title_frame = Frame(self.menu_frame, relief=FLAT)
         subject_title_frame.place(x=20, y=30)
 
+        Frame(subject_title_frame, width=3, height=18, bg=theme.ACCENT).pack(
+            side="left", padx=(0, 8)
+        )
         Label(
             subject_title_frame,
             text="科目管理",
-            fg="#C8C8C8",
+            fg=theme.FG,
             font=("汉仪文黑-85W", 16),
         ).pack(side="left")
 
@@ -329,20 +336,20 @@ class Menu:
         style.theme_use("clam")
         style.configure(
             "Custom.Vertical.TScrollbar",
-            background="#2E333C",          # 滑块背景
-            troughcolor="#1C1F25",         # 槽背景
-            arrowcolor="#C8C8C8",          # 箭头颜色
-            bordercolor="#1C1F25",
-            lightcolor="#3A404C",
-            darkcolor="#1C1F25",
+            background="#39414D",          # 滑块背景
+            troughcolor="#1B1F26",         # 槽背景
+            arrowcolor=theme.MUTED,        # 箭头颜色
+            bordercolor="#1B1F26",
+            lightcolor="#454E5C",
+            darkcolor="#1B1F26",
             relief="flat",
         )
 
         # 2. 配置滑块（thumb）——精确控制滚动条滑块
         style.configure(
             "Custom.Vertical.TScrollbar.thumb",
-            background="#2E333C",
-            bordercolor="#1C1F25",
+            background="#39414D",
+            bordercolor="#1B1F26",
             relief="flat",
         )
 
@@ -350,15 +357,15 @@ class Menu:
         style.map(
             "Custom.Vertical.TScrollbar",
             background=[
-                ("active", "#3A404C"),      # 鼠标悬停时滑块变亮（深灰蓝）
-                ("pressed", "#1C1F25"),     # 按下时更深
-                ("disabled", "#3A404C")     # 禁用时也保持深色，不显示白色
+                ("active", "#454E5C"),      # 鼠标悬停时滑块变亮
+                ("pressed", "#2E353F"),     # 按下时更深
+                ("disabled", "#39414D")     # 禁用时也保持深色
             ],
             troughcolor=[
-                ("disabled", "#1C1F25")     # 禁用时槽颜色不变
+                ("disabled", "#1B1F26")     # 禁用时槽颜色不变
             ],
             arrowcolor=[
-                ("disabled", "#5A5F6A")     # 禁用时箭头变暗，但仍可见
+                ("disabled", theme.DIM)     # 禁用时箭头变暗，但仍可见
             ]
         )
         list_frame = Frame(self.menu_frame, relief=FLAT)
@@ -370,13 +377,15 @@ class Menu:
         self._subject_listbox = Listbox(
             list_frame,
             yscrollcommand=scrollbar.set,
-            bg="#1C1F25",
-            fg="#C8C8C8",
-            selectbackground="#2E333C",
-            selectforeground="#FFFFFF",
+            bg="#1B1F26",
+            fg=theme.FG,
+            selectbackground=theme.PANEL_HI,
+            selectforeground=theme.ACCENT,
             font=("JetBrains Mono", 12),
             highlightthickness=0,
             borderwidth=0,
+            relief=FLAT,
+            activestyle="none",
         )
         self._subject_listbox.pack(side=LEFT, fill=BOTH, expand=True)
         scrollbar.config(command=self._subject_listbox.yview)
@@ -388,27 +397,24 @@ class Menu:
         action_frame.place(x=20, y=380)
         action_frame.pack_propagate(False)
 
-        btn_style = {
-            "fg": COLOR,
-            "font": ("汉仪文黑-85W", 14),
-            "relief": FLAT,
-        }
+        def _menu_btn(text, command, kind="normal"):
+            btn = Button(
+                action_frame,
+                text=text,
+                command=command,
+                fg=theme.MUTED,
+                font=("汉仪文黑-85W", 14),
+                relief=FLAT,
+            )
+            theme.style_button(btn, kind, padx=0, pady=4, font=("汉仪文黑-85W", 14))
+            btn.pack(side="left", fill=X, expand=True)
+            return btn
 
-        Button(action_frame, text="添加", command=self._add_subject, **btn_style).pack(
-            side="left", fill=X, expand=True
-        )
-        Button(action_frame, text="重命名", command=self._rename_subject, **btn_style).pack(
-            side="left", fill=X, expand=True
-        )
-        Button(action_frame, text="删除", command=self._delete_subject, **btn_style).pack(
-            side="left", fill=X, expand=True
-        )
-        Button(action_frame, text="上移", command=self._move_subject_up, **btn_style).pack(
-            side="left", fill=X, expand=True
-        )
-        Button(action_frame, text="下移", command=self._move_subject_down, **btn_style).pack(
-            side="left", fill=X, expand=True
-        )
+        _menu_btn("添加", self._add_subject, "accent")
+        _menu_btn("重命名", self._rename_subject)
+        _menu_btn("删除", self._delete_subject, "danger")
+        _menu_btn("上移", self._move_subject_up)
+        _menu_btn("下移", self._move_subject_down)
 
     def change(self, key, value, restart=False):
         with open("setting.json", "r") as f:

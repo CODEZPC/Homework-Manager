@@ -27,14 +27,16 @@ import help
 import homeworkfunc
 import dataupdate
 import backup
+import theme
 import menu
 import updater
 
-COLOR = "#767F89"
+COLOR = theme.MUTED
 DEBUG = False
 DATA = "homework.json"
-VERSION = "1.6.4"
-VERSION_NUM = 1006004000
+PAGE_ROTATE_MS = 12000  # 作业超出一页时，每页停留时间（毫秒）
+VERSION = "1.7.0"
+VERSION_NUM = 1007000000
 tk = None
 
 
@@ -84,24 +86,39 @@ class HomeworkTool:
     def __init__(self):
 
         # 默认UI配置
-        tk.option_add("*Background", "#23272E")
-        tk.option_add("*Foreground", "#C8C8C8")
+        tk.option_add("*Background", theme.BG)
+        tk.option_add("*Foreground", theme.FG)
         tk.option_add("*Font", ("Jetbrains mono", 18))
         self.load_ui()
 
         # 列表初始化
-        self.homework_list = []  # 作业UI
-        self.time_list = []  # 时间UI
-        self.homework_widths = []  # 作业UI宽度（用于滚动显示）
-        self.need_roll = []  # 需要滚动显示的作业索引
-        self.new_position = []
+        self.homework_list = []  # 全部作业文本（仅用于计数）
+        self.time_list = []  # 当前页的时间 UI
+        self.canvas_items = []
+        self.canvas_widths = []
         self.subject_codes = homeworkfunc.SUBJECT_CODES
         self.subject_display_names = homeworkfunc.SUBJECT_DISPLAY_NAMES
         self.emphasize_levels = homeworkfunc.EMPHASIZE_LEVELS
         self.reminder_schedule = []  # 计划的tk.after
-        for self.HOMEWORK_LIMIT in range(1000):
-            if self.HOMEWORK_LIMIT * 30 + 40 >= tk.winfo_screenheight() - 40:
-                break
+
+        # 列表排版参数：按屏幕高度计算每页可容纳的行数，超出一页则分页轮播
+        self.LIST_FONT = tkfont.Font(root=tk, family="HYWenHei-85W", size=18)
+        self.LINE_HEIGHT = self.LIST_FONT.metrics("linespace") + 8
+        self.LIST_TOP = 40
+        self.LIST_LEFT = 45
+        self.LIST_HEIGHT = max(120, tk.winfo_screenheight() - self.LIST_TOP - 44)
+        self.LINES_PER_PAGE = max(1, self.LIST_HEIGHT // self.LINE_HEIGHT)
+        self.WRAP_WIDTH = max(80, (self.POSITION_TIME_DISPLAY_X - 50) - 12)
+        self._entries = []
+        self._page = 0
+        self._page_count = 1
+        self._page_entries = []
+        self._page_entry_y = {}
+        self._entry_canvas = {}
+        self._entry_fill = {}
+        self._page_rotate_aid = None
+        self._hover_idx = -1
+        self.arg = -1
 
         # 各类定时器的 id（用于取消），初始化为 None
         self._upload_aid = None
@@ -110,7 +127,6 @@ class HomeworkTool:
 
         self.mousex, self.mousey = 0, 0
         self.load_amount = 0  # 负载量
-        self._last_frame_time = None
 
         # 校验资源完整性
         homeworkfunc.resource_check(self.subject_codes)
@@ -188,8 +204,9 @@ class HomeworkTool:
             tk.after_cancel(i)
         self.reminder_schedule = []
 
-        # 取消截止时间轮播定时器
+        # 取消定时器
         self._cancel_deadline_rotation()
+        self._cancel_page_rotation()
         self._rot = 0
 
         # 清理之前在 canvas 上的显示与时间显示
@@ -253,43 +270,13 @@ class HomeworkTool:
                 # 写入失败不应导致程序崩溃，继续显示已有内容
                 pass
 
-        # 使用 canvas 渲染文本项并缓存宽度与滚动标记
-        self.homework_list = []  # 存放文本内容
-        self.canvas_items = []
-        self.canvas_widths = []
-        self.need_roll = []
+        # 构建条目：按像素宽度自动换行（不再横向滚动）
+        self._entries = self._build_entries()
+        self.homework_list = [e["text"] for e in self._entries]
+        self._page = 0
 
-        # 先收集所有文本和状态
-        all_items = []
-        for i, subj in enumerate(self.subject_codes):
-            for k in self.data[subj]:
-                content = self.subject_display_names[i] + ":" + k["content"]
-                status = homeworkfunc.collect_status(k)
-                all_items.append((content, status))
-            if keyboard.is_pressed("tab"):
-                time.sleep(0.6)
-
-        canvas_width = self.POSITION_TIME_DISPLAY_X - 50
-        self.list_canvas.place(
-            x=45, y=40, width=canvas_width, height=tk.winfo_screenheight() - 60
-        )
-        inv = 35 if len(all_items) < 10 else 30
-        for idx, (txt, status) in enumerate(all_items):
-            # Canvas 的原点位于屏幕 x=45,y=40，因此在 canvas 内坐标使用相对偏移
-            y = idx * inv
-            fill = "#C8C8C8"
-            if status == -1:
-                fill = COLOR
-            # 在 canvas 内使用 (0, y) 放置，anchor='nw' 以左上角对齐，保证与原来 place(x=45,y=40+...) 对齐
-            item = self.list_canvas.create_text(
-                0, y, text=txt, anchor="nw", fill=fill, font=("HYWenHei-85W", 18)
-            )
-            self.canvas_items.append(item)
-            self.homework_list.append(txt)
-            bbox = self.list_canvas.bbox(item)
-            width = (bbox[2] - bbox[0]) if bbox else 0
-            self.canvas_widths.append(width)
-            self.need_roll.append(width + 45 > self.POSITION_TIME_DISPLAY_X)
+        # 渲染当前页（内部同时计划下一次时间刷新）
+        self.upload_time_display()
 
         self.ui_pack()
 
@@ -299,26 +286,14 @@ class HomeworkTool:
         self.cooldown(self.ui_top_add, "添加")
         self.cooldown(self.ui_top_clear, "清理")
 
-        # 更新时间显示并计划下一次更新，启动 canvas 滚动
-        self.upload_time_display()
-        try:
-            if getattr(self, "_page_aid", None) is not None:
-                tk.after_cancel(self._page_aid)
-        except Exception:
-            pass
-        self._page_interval = 33
-        self._page_aid = tk.after(self._page_interval, self.canvas_roll)
-        self.reminder_schedule.append(self._page_aid)
+        # 超出一页时启动分页轮播
+        self._start_page_rotation()
 
         # 启动“开始收集 / 截止”文案轮播（每 5 秒）
         self._start_deadline_rotation()
 
     def upload_time_display(self):
-        """
-        每分钟更新一次时间显示。
-        使用实例属性 `_upload_aid` 跟踪上一次调度以便安全取消。
-        """
-
+        """每分钟刷新一次显示（重新渲染当前页）。"""
         # 取消上一次的定时器（如果存在）
         if getattr(self, "_upload_aid", None) is not None:
             try:
@@ -327,55 +302,7 @@ class HomeworkTool:
             except Exception:
                 pass
 
-        # 隐藏之前的时间显示
-        for i in self.time_list:
-            i.place_forget()
-
-        # 清空时间显示列表
-        self.time_list = []
-
-        # 重新生成时间显示
-        idx = 0
-        upload = 0
-        for i, j in enumerate(self.subject_codes):
-            for k in self.data[j]:
-                status_int = homeworkfunc.collect_status(k)
-                time_text = self._time_cell_text(k)
-                self.time_list.append(
-                    Label(
-                        self.main_frame,
-                        text=time_text,
-                        width=13,
-                        justify="left",
-                        anchor="e",
-                        font=("HYWenHei-85W", 16),
-                    )
-                )
-                if status_int >= 3:
-                    self.time_list[-1].config(bg="#C8C8C8", fg="#23272E")
-                    if status_int == 4:
-                        upload = 1
-                elif status_int == 2:
-                    self.time_list[-1].config(bg="#666666", fg="#FFFFFF")
-                elif status_int == 1:
-                    self.time_list[-1].config(bg="#23272E", fg="#C8C8C8")
-                elif status_int == 0:
-                    self.time_list[-1].config(bg="#23272E", fg=COLOR)
-                elif status_int == -1:
-                    self.time_list[-1].config(bg="#23272E", fg=COLOR)
-                    try:
-                        self.list_canvas.itemconfig(self.canvas_items[idx], fill=COLOR)
-                    except Exception:
-                        # 兼容旧数据结构，如果 canvas_items 不存在则忽略
-                        try:
-                            self.homework_list[idx] = self.homework_list[idx]
-                        except Exception:
-                            pass
-                idx += 1
-        inv = 35 if len(self.time_list) < 10 else 30
-        for idx, widget in enumerate(self.time_list):
-            widget.place(x=self.POSITION_TIME_DISPLAY_X, y=40 + idx * inv)
-
+        upload = self._render_page()
         if upload:
             homeworkfunc.uri_classisland("Homeworkmode-upload")
 
@@ -384,6 +311,224 @@ class HomeworkTool:
         # 只传递方法引用，由方法内部追踪 aid
         self._upload_aid = tk.after(remaining_seconds * 1000, self.upload_time_display)
         self.reminder_schedule.append(self._upload_aid)
+
+    def _wrap_text(self, text):
+        """
+        按像素宽度把文本拆分为多行（自动换行，不再横向滚动）。
+        以逐字符宽度累加估算，保证整行不超过 WRAP_WIDTH。
+        """
+        width = getattr(self, "WRAP_WIDTH", 0) or 600
+        lines = []
+        cur = ""
+        cur_w = 0
+        for ch in str(text):
+            w = self.LIST_FONT.measure(ch)
+            if cur and cur_w + w > width:
+                lines.append(cur)
+                cur, cur_w = ch, w
+            else:
+                cur += ch
+                cur_w += w
+        if cur or not lines:
+            lines.append(cur)
+        return lines
+
+    def _build_entries(self):
+        """按显示顺序构建条目（含自动换行结果），供分页渲染使用。"""
+        entries = []
+        flat = 0
+        for i, subj in enumerate(self.subject_codes):
+            for k in self.data.get(subj, []):
+                if i < len(self.subject_display_names):
+                    name = self.subject_display_names[i]
+                else:
+                    name = subj
+                text = name + ":" + str(k.get("content", ""))
+                lines = self._wrap_text(text)
+                entries.append(
+                    {
+                        "index": flat,  # 全列表序号（删除 / 编辑用）
+                        "subject": subj,
+                        "item": k,
+                        "text": text,
+                        "lines": lines,
+                        "height": max(1, len(lines)) * self.LINE_HEIGHT,
+                    }
+                )
+                flat += 1
+            if keyboard.is_pressed("tab"):
+                time.sleep(0.6)
+        return entries
+
+    def _paginate(self, entries):
+        """
+        按每页可容纳的行数对条目分页。
+
+        正常情况下条目不拆分；若单个条目超过一页行数，则拆分到多页，
+        续页（first_segment=False）不再重复显示时间标签。
+        """
+        per_page = max(1, getattr(self, "LINES_PER_PAGE", 1))
+        pages = []
+        cur = []
+        used = 0
+        for e in entries:
+            lines = e.get("lines") or [""]
+            start = 0
+            while start < len(lines):
+                if used >= per_page:
+                    pages.append(cur)
+                    cur, used = [], 0
+                take = min(per_page - used, len(lines) - start)
+                seg = dict(e)
+                seg["lines"] = lines[start : start + take]
+                seg["height"] = take * self.LINE_HEIGHT
+                seg["first_segment"] = start == 0
+                cur.append(seg)
+                used += take
+                start += take
+            if used >= per_page:
+                pages.append(cur)
+                cur, used = [], 0
+        if cur:
+            pages.append(cur)
+        return pages or [[]]
+
+    def _render_page(self):
+        """
+        渲染当前页：内容（自动换行）+ 右侧时间标签。
+        返回是否需要触发 ClassIsland 的提交通知。
+        """
+        try:
+            self.list_canvas.delete("all")
+        except Exception:
+            pass
+        for widget in self.time_list:
+            try:
+                widget.destroy()
+            except Exception:
+                pass
+        self.time_list = []
+        self.canvas_items = []
+        self.canvas_widths = []
+        self._page_entries = []
+        self._page_entry_y = {}
+        self._entry_canvas = {}
+        self._entry_fill = {}
+        self._hover_idx = -1
+        self.arg = -1
+
+        entries = getattr(self, "_entries", [])
+        pages = self._paginate(entries)
+        self._page_count = max(1, len(pages))
+        if self._page >= self._page_count or self._page < 0:
+            self._page = 0
+        page_entries = pages[self._page]
+
+        canvas_width = self.POSITION_TIME_DISPLAY_X - 50
+        self.list_canvas.place(
+            x=self.LIST_LEFT,
+            y=self.LIST_TOP,
+            width=canvas_width,
+            height=self.LIST_HEIGHT,
+        )
+
+        upload = 0
+        y = 0
+        for e in page_entries:
+            k = e["item"]
+            status = homeworkfunc.collect_status(k)
+            fill = theme.DIM if status == -1 else theme.FG
+
+            ids = []
+            for li, line in enumerate(e["lines"]):
+                item_id = self.list_canvas.create_text(
+                    0,
+                    y + li * self.LINE_HEIGHT,
+                    text=line,
+                    anchor="nw",
+                    fill=fill,
+                    font=self.LIST_FONT,
+                )
+                ids.append(item_id)
+                self.canvas_items.append(item_id)
+                try:
+                    bbox = self.list_canvas.bbox(item_id)
+                    if bbox:
+                        self.canvas_widths.append(bbox[2] - bbox[0])
+                except Exception:
+                    pass
+
+            e["canvas"] = ids
+            e["fill"] = fill
+            e["label"] = None
+            e["top"] = y
+            self._page_entries.append(e)
+            self._entry_canvas.setdefault(e["index"], []).extend(ids)
+            self._entry_fill[e["index"]] = fill
+            if e["index"] not in self._page_entry_y:
+                self._page_entry_y[e["index"]] = y
+
+            # 时间标签仅在条目首段创建，并与首行对齐
+            if e.get("first_segment", True):
+                chip_bg, chip_fg = theme.time_chip_style(status)
+                label = Label(
+                    self.main_frame,
+                    text=self._time_cell_text(k),
+                    width=13,
+                    justify="left",
+                    anchor="e",
+                    font=("HYWenHei-85W", 15),
+                    padx=10,
+                    bd=0,
+                    highlightthickness=0,
+                    bg=chip_bg,
+                    fg=chip_fg,
+                )
+                label.place(x=self.POSITION_TIME_DISPLAY_X, y=self.LIST_TOP + y + 2)
+                e["label"] = label
+                self.time_list.append(label)
+                if status == 4:
+                    upload = 1
+
+            y += e["height"]
+
+        try:
+            self.calculate_canvas_load()
+        except Exception:
+            pass
+        return upload
+
+    def _start_page_rotation(self):
+        """页数超出一页时，按 PAGE_ROTATE_MS 间隔轮播各页。"""
+        self._cancel_page_rotation()
+        if getattr(self, "_page_count", 1) > 1:
+            self._page_rotate_aid = tk.after(PAGE_ROTATE_MS, self._page_rotate_tick)
+            self.reminder_schedule.append(self._page_rotate_aid)
+
+    def _cancel_page_rotation(self):
+        """取消已排程的分页轮播定时器。"""
+        aid = getattr(self, "_page_rotate_aid", None)
+        if aid is not None:
+            try:
+                tk.after_cancel(aid)
+            except Exception:
+                pass
+            try:
+                self.reminder_schedule.remove(aid)
+            except Exception:
+                pass
+            self._page_rotate_aid = None
+
+    def _page_rotate_tick(self):
+        """切换到下一页并重绘。"""
+        self._page = (self._page + 1) % max(1, getattr(self, "_page_count", 1))
+        try:
+            upload = self._render_page()
+            if upload:
+                homeworkfunc.uri_classisland("Homeworkmode-upload")
+        except Exception:
+            pass
+        self._start_page_rotation()
 
     def _deadline_of(self, item):
         """读取作业项的截止时间戳；仅接受数值，返回 0 表示未启用截止时间。"""
@@ -406,9 +551,10 @@ class HomeworkTool:
 
         - 未启用截止时间：沿用原有“开始收集”显示逻辑；
         - 启用了截止时间：
-            · 尚未开始收集、距开始尚早 → “xx:xx收”与“xx:xx截止”轮播；
-            · 已开始收集（即使超过 5 分钟）但截止未到 → “现在收”与“xx:xx截止”轮播；
+            · 尚未开始收集、距开始尚早 → “xx:xx起”与“xx:xx截止”轮播；
+            · 已开始收集（即使超过 5 分钟）但截止未到 → “可提交”与“xx:xx截止”轮播；
             · 未设开始收集（不收）→ 单独显示“xx:xx截止”；
+            · 自定义文本 → 在自定义信息与“xx:xx截止”间轮播；
             · 截止已到 → 恢复原有“时间已过”等逻辑。
         """
         t = item.get("time", 0)
@@ -436,8 +582,100 @@ class HomeworkTool:
                 return homeworkfunc.analyze_time(t, em)[0][:-1] + "起"
             return homeworkfunc.analyze_time(d, em, word="截止")[0]
 
+        # 自定义文本（字符串时间）且截止未到 → 在自定义信息与截止时间间轮播
+        if isinstance(t, str) and t.strip() != "" and open_deadline:
+            if getattr(self, "_rot", 0) == 0:
+                return t
+            return homeworkfunc.analyze_time(d, em, word="截止")[0]
+
         # 其余情况：沿用原有文案（即将收 / 时间已过 / 自定义文本等）
         return homeworkfunc.analyze_time(t, em)[0]
+
+    @staticmethod
+    def _hex_to_rgb(color):
+        """把 #RRGGBB 颜色转换为 (r, g, b)。"""
+        color = str(color).lstrip("#")
+        return tuple(int(color[i : i + 2], 16) for i in (0, 2, 4))
+
+    @staticmethod
+    def _rgb_to_hex(rgb):
+        """把 (r, g, b) 转换为 #RRGGBB。"""
+        return "#%02X%02X%02X" % tuple(
+            max(0, min(255, int(round(v)))) for v in rgb
+        )
+
+    @classmethod
+    def _same_color(cls, a, b):
+        """比较两个颜色是否等价（忽略大小写 / 格式差异）。"""
+        try:
+            return cls._hex_to_rgb(a) == cls._hex_to_rgb(b)
+        except Exception:
+            return str(a) == str(b)
+
+    def _fade_widget(self, widget, start, end, steps=6, interval=30, on_end=None):
+        """
+        将控件前景色从 start 渐变到 end，用于轮播文案的淡入 / 淡出。
+        控件销毁后自动停止；on_end 在渐变结束后调用。
+        """
+        try:
+            r0, g0, b0 = self._hex_to_rgb(start)
+            r1, g1, b1 = self._hex_to_rgb(end)
+        except Exception:
+            try:
+                widget.config(fg=end)
+            except Exception:
+                pass
+            if on_end:
+                on_end()
+            return
+
+        def step(i):
+            try:
+                if not widget.winfo_exists():
+                    return
+                t = i / (steps - 1) if steps > 1 else 1.0
+                widget.config(
+                    fg=self._rgb_to_hex(
+                        (r0 + (r1 - r0) * t, g0 + (g1 - g0) * t, b0 + (b1 - b0) * t)
+                    )
+                )
+            except Exception:
+                return
+            if i < steps - 1:
+                try:
+                    widget.after(interval, lambda: step(i + 1))
+                except Exception:
+                    pass
+            elif on_end:
+                try:
+                    on_end()
+                except Exception:
+                    pass
+
+        step(0)
+
+    def _crossfade_time_label(self, widget, text, bg, fg, steps=5, interval=28):
+        """轮播切换时对时间标签做淡出 → 换字/换底色 → 淡入。"""
+        try:
+            cur_fg = widget.cget("fg")
+            cur_bg = widget.cget("bg")
+        except Exception:
+            try:
+                widget.config(text=text, bg=bg, fg=fg)
+            except Exception:
+                pass
+            return
+
+        def swap():
+            try:
+                if not widget.winfo_exists():
+                    return
+                widget.config(text=text, bg=bg, fg=bg)
+            except Exception:
+                return
+            self._fade_widget(widget, bg, fg, steps, interval)
+
+        self._fade_widget(widget, cur_fg, cur_bg, steps, interval, on_end=swap)
 
     def _start_deadline_rotation(self):
         """启动“开始收集 / 截止”文案轮播（每 5 秒切换一次）。"""
@@ -461,42 +699,40 @@ class HomeworkTool:
             self._rot_aid = None
 
     def _deadline_rotation_tick(self):
-        """每 5 秒轮播一次：就地刷新各时间 Label 的文案，并在状态切换时同步样式。"""
+        """每 5 秒轮播一次：就地刷新当前页各时间 Label 的文案，并同步样式。"""
         self._rot = 1 - getattr(self, "_rot", 0)
-        idx = 0
-        try:
-            for subj in self.subject_codes:
-                for k in self.data.get(subj, []):
-                    if idx >= len(self.time_list):
-                        break
+        for e in getattr(self, "_page_entries", []):
+            widget = e.get("label")
+            if widget is None:
+                continue  # 超长条目的续页没有时间标签
+            try:
+                k = e["item"]
+                status_int = homeworkfunc.collect_status(k)
+                text = self._time_cell_text(k)
+                bg, fg = theme.time_chip_style(status_int)
+                text_changed = widget.cget("text") != text
+                bg_changed = not self._same_color(widget.cget("bg"), bg)
+                if text_changed:
+                    # 文案变化（轮播切换）→ 淡出淡入
+                    self._crossfade_time_label(widget, text, bg, fg)
+                elif bg_changed:
+                    # 底色变化 → 立即换底色后渐变文字色
                     try:
-                        widget = self.time_list[idx]
-                        status_int = homeworkfunc.collect_status(k)
-                        text = self._time_cell_text(k)
-                        if widget.cget("text") != text:
-                            widget.config(text=text)
-                        if status_int >= 3:
-                            bg, fg = "#C8C8C8", "#23272E"
-                        elif status_int == 2:
-                            bg, fg = "#666666", "#FFFFFF"
-                        elif status_int == 1:
-                            bg, fg = "#23272E", "#C8C8C8"
-                        else:
-                            bg, fg = "#23272E", COLOR
-                        if widget.cget("bg") != bg or widget.cget("fg") != fg:
-                            widget.config(bg=bg, fg=fg)
-                        if status_int == -1:
-                            try:
-                                self.list_canvas.itemconfig(
-                                    self.canvas_items[idx], fill=COLOR
-                                )
-                            except Exception:
-                                pass
+                        widget.config(bg=bg)
                     except Exception:
                         pass
-                    idx += 1
-        except Exception:
-            pass
+                    self._fade_widget(widget, widget.cget("fg"), fg)
+                elif not self._same_color(widget.cget("fg"), fg):
+                    # 仅文字颜色变化 → 渐变过渡
+                    self._fade_widget(widget, widget.cget("fg"), fg)
+                if status_int == -1:
+                    for item_id in e.get("canvas", []):
+                        try:
+                            self.list_canvas.itemconfig(item_id, fill=theme.DIM)
+                        except Exception:
+                            pass
+            except Exception:
+                pass
         old = getattr(self, "_rot_aid", None)
         self._rot_aid = tk.after(5000, self._deadline_rotation_tick)
         if old is not None:
@@ -506,89 +742,17 @@ class HomeworkTool:
                 pass
         self.reminder_schedule.append(self._rot_aid)
 
-    def roll_show(self):
-        # Deprecated wrapper: call new canvas_roll
-        return self.canvas_roll()
-
-    def canvas_roll(self):
-        # 单帧移动幅度与间隔
-        dx = 2
-        interval = getattr(self, "_page_interval", 33)
-        left_bound = 45
-
-        # 计算两帧之间时间间隔（用于估算 FPS）
-        now = time.perf_counter()
-        frame_dt = None
-        if getattr(self, "_last_frame_time", None) is not None:
-            frame_dt = now - self._last_frame_time
-        self._last_frame_time = now
-
-        # 对每个需要滚动的 canvas 项目移动（使用 canvas 内坐标）
-        canvas_left = self.list_canvas.winfo_x()
-        left_bound_canvas = left_bound - canvas_left
-        target_right_canvas = self.POSITION_TIME_DISPLAY_X - canvas_left
-        for idx, item in enumerate(getattr(self, "canvas_items", [])):
-            if not self.need_roll[idx]:
-                continue
-            bbox = self.list_canvas.bbox(item)
-            if not bbox:
-                continue
-            x1, y1, x2, y2 = bbox
-            # 如果整条文本已经移出左侧（右边界 < left_bound_canvas），把它跳到右侧显示线处（canvas 内坐标）
-            if x2 < left_bound_canvas:
-                # 将文本的左边对齐到全局 POSITION_TIME_DISPLAY_X（转换为 canvas 内坐标）
-                target_left_canvas = self.POSITION_TIME_DISPLAY_X - canvas_left
-                shift = target_left_canvas - x1
-                if shift != 0:
-                    self.list_canvas.move(item, shift, 0)
-            else:
-                self.list_canvas.move(item, -dx, 0)
-        # 在计划下一帧之前更新负载量显示
-        try:
-            self.calculate_canvas_load(frame_dt, dx)
-        except Exception:
-            pass
-
-        # 计划下一帧
-        try:
-            if getattr(self, "_page_aid", None) is not None:
-                # 移除旧的记录（下一行会覆盖）
-                try:
-                    self.reminder_schedule.remove(self._page_aid)
-                except Exception:
-                    pass
-        except Exception:
-            pass
-        self._page_aid = tk.after(interval, self.canvas_roll)
-        self.reminder_schedule.append(self._page_aid)
-
-    def calculate_canvas_load(self, frame_dt=None, dx=2):
+    def calculate_canvas_load(self):
         """
-        估算 Canvas 渲染负载并更新 `self.load_amount` 与 `ui_info_load` 显示。
+        估算渲染负载并更新 `self.load_amount`（显示于底部信息栏）。
 
-        负载由以下部分组成：项数、正在滚动的项数、每秒移动像素与文本总像素宽度。
-        同时尽可能纳入进程的 CPU 与内存占用作为参考。
+        取消横向滚动后，负载主要由作业数量与文本像素宽度决定，
+        并尽可能纳入进程的 CPU 与内存占用作为参考。
         """
-        items = getattr(self, "canvas_items", []) or []
-        count_items = len(items)
-        rolling_count = sum(1 for i in getattr(self, "need_roll", []) if i)
+        count_items = len(getattr(self, "homework_list", []) or [])
         total_text_pixels = sum(getattr(self, "canvas_widths", []) or [0])
 
-        # 估算 FPS
-        if frame_dt and frame_dt > 0:
-            fps = 1.0 / frame_dt
-        else:
-            fps = 1000.0 / float(getattr(self, "_page_interval", 33))
-
-        pixels_per_second = dx * fps * max(1, rolling_count)
-
-        # 加权组合（可按需调整权重/系数）
-        load = int(
-            count_items * 1
-            + rolling_count * 6
-            + pixels_per_second / 500.0
-            + total_text_pixels / 2000.0
-        )
+        load = int(count_items * 2 + total_text_pixels / 2000.0)
 
         # 尝试加入 CPU / 内存指标
         try:
@@ -606,10 +770,12 @@ class HomeworkTool:
         self.info_frame.place_forget()
         self.mask_left.place_forget()
         self.mask_right.place_forget()
+        self.info_line.place_forget()
 
         self.mask_left.place(x=0, y=0, relheight=1)
         self.mask_right.place(x=tk.winfo_screenwidth() - 17, y=0, relheight=1)
-        self.info_frame.place(x=10, y=tk.winfo_screenheight() - 20)
+        self.info_line.place(x=0, y=tk.winfo_screenheight() - 27, relwidth=1)
+        self.info_frame.place(x=10, y=tk.winfo_screenheight() - 23)
 
     def load_ui(self):
         tk.title("作业管理器")
@@ -680,11 +846,28 @@ class HomeworkTool:
         )
         
 
+        # 顶栏按钮：保持原有排列顺序与占位大小，仅应用配色与悬停反馈
         self.ui_top_exit.pack(side="right")
         self.ui_top_add.pack(side="right")
         self.ui_top_clear.pack(side="right")
         self.ui_top_help.pack(side="right")
         self.ui_top_menu.pack(side="right")
+
+        theme.style_button(
+            self.ui_top_exit, "danger", keep_geometry=True, font=("汉仪文黑-85W", 14)
+        )
+        theme.style_button(
+            self.ui_top_add, "accent", keep_geometry=True, font=("汉仪文黑-85W", 14)
+        )
+        theme.style_button(
+            self.ui_top_clear, "normal", keep_geometry=True, font=("汉仪文黑-85W", 14)
+        )
+        theme.style_button(
+            self.ui_top_help, "normal", keep_geometry=True, font=("汉仪文黑-85W", 14)
+        )
+        theme.style_button(
+            self.ui_top_menu, "normal", keep_geometry=True, font=("汉仪文黑-85W", 14)
+        )
 
         self.ui_side_delete = Button(
             self.main_frame, text="×", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
@@ -692,15 +875,21 @@ class HomeworkTool:
         self.ui_side_edit = Button(
             self.main_frame, text="E", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
         )
+        # 保持原有尺寸/占位与配色，仅增加悬停反馈
+        theme.style_button(self.ui_side_delete, "normal", keep_geometry=True)
+        theme.style_button(self.ui_side_edit, "normal", keep_geometry=True)
 
         # 创建用于显示作业列表的 Canvas（替代多个 Label）
-        self.list_canvas = Canvas(self.main_frame, bg="#23272E", highlightthickness=0)
+        self.list_canvas = Canvas(self.main_frame, bg=theme.BG, highlightthickness=0)
         canvas_width = self.POSITION_TIME_DISPLAY_X - 50
         self.list_canvas.place(
             x=45, y=40, width=canvas_width, height=tk.winfo_screenheight() - 60
         )
 
         self.info_frame = Frame(self.main_frame, relief=FLAT)
+
+        # 底部信息栏上方的细分隔线
+        self.info_line = Frame(self.main_frame, height=1, bg=theme.LINE)
 
         self.ui_info_basic = Label(
             self.info_frame, text="", font=("JetBrains Mono", 9), fg=COLOR
@@ -724,13 +913,24 @@ class HomeworkTool:
             self.info_frame, text="", font=("JetBrains Mono", 9), fg=COLOR
         )  # 自动更新
 
-        self.ui_info_basic.pack(side="left")
-        self.ui_info_time.pack(side="left")
-        self.ui_info_homework.pack(side="left")
-        self.ui_info_load.pack(side="left")
-        self.ui_info_mouse.pack(side="left")
-        self.ui_info_tick.pack(side="left")
-        self.ui_info_message.pack(side="left")
+        # 信息栏：项之间加细分隔符，弱化分隔、突出内容
+        def _pack_info(widget, first=False):
+            if not first:
+                Label(
+                    self.info_frame,
+                    text="│",
+                    font=("JetBrains Mono", 9),
+                    fg=theme.LINE,
+                ).pack(side="left", padx=2)
+            widget.pack(side="left", padx=2)
+
+        _pack_info(self.ui_info_basic, first=True)
+        _pack_info(self.ui_info_time)
+        _pack_info(self.ui_info_homework)
+        _pack_info(self.ui_info_load)
+        _pack_info(self.ui_info_mouse)
+        _pack_info(self.ui_info_tick)
+        _pack_info(self.ui_info_message)
 
         self.ui_info_message.bind("<Button-1>", updater.response)
 
@@ -745,7 +945,6 @@ class HomeworkTool:
                 and pygetwindow.getActiveWindow().title == tk.title()
             )
 
-        flash_homework = 20
         flash_load = 20
         flash_background = 80
 
@@ -766,27 +965,10 @@ class HomeworkTool:
             color_bg_basic = "#23272E"
 
         homework = len(self.homework_list)
-        text_homework = (
-            f"作业数: {homework:02d}/{self.HOMEWORK_LIMIT:02d}"
-        )
-        if homework > self.HOMEWORK_LIMIT + 5:
-            if flash_tick // flash_homework % 2 != 0:
-                color_fg_homework = "#FFFFFF"
-                color_bg_homework = "#FF0000"
-            else:
-                color_fg_homework = "#FF0000"
-                color_bg_homework = "#23272E"
-        elif homework > self.HOMEWORK_LIMIT:
-            if flash_tick // flash_homework % 2 != 0:
-                color_fg_homework = "#000000"
-                color_bg_homework = "#FFFF00"
-            else:
-                color_fg_homework = "#FFFF00"
-                color_bg_homework = "#23272E"
-        else:
-            # COMMON
-            color_fg_homework = COLOR
-            color_bg_homework = "#23272E"
+        # 不再限制作业数量，仅显示作业数
+        text_homework = f"作业数: {homework:02d}"
+        color_fg_homework = COLOR
+        color_bg_homework = "#23272E"
 
         text_load = f"负载: {self.load_amount}"
         if self.load_amount > 200:
@@ -930,7 +1112,7 @@ class HomeworkTool:
     ):
         new_window = Toplevel(tk)
         new_window.title("作业管理器·新建作业")
-        new_window.config(bg="#23272E")
+        new_window.config(bg=theme.BG)
         new_window.resizable(False, False)
         new_window.attributes("-topmost", True)
 
@@ -953,8 +1135,8 @@ class HomeworkTool:
             nonlocal subject_var
             subject_var = self.subject_display_names[index]
             for btn in objects:
-                btn.configure(fg="#C8C8C8")
-            objects[index].configure(fg="#005EFF")
+                btn.configure(fg=theme.MUTED)
+            objects[index].configure(fg=theme.ACCENT)
 
         # TODO SUBJECT SELECT
         subject_select_frame = Frame(new_window, relief=FLAT)
@@ -979,19 +1161,24 @@ class HomeworkTool:
                 text=self.subject_display_names[i],
                 command=lambda i=i, ss=subject_select: subject_change(i, ss),
                 relief=FLAT,
-                font=("HYWenHei-85W", 16),
-                fg="#005EFF" if subject_index == i else "#C8C8C8",
+                font=("HYWenHei-85W", 15),
+                fg=theme.ACCENT if subject_index == i else theme.MUTED,
+                bd=0,
+                highlightthickness=0,
+                cursor="hand2",
+                padx=10,
+                pady=2,
             )
-            btn.pack(side="left", expand=True)
+            theme.hover_bg(btn, theme.BG, theme.PANEL_HI)
+            btn.pack(side="left", expand=True, padx=2)
             subject_select.append(btn)
 
         Label(new_window, text="内容", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
             row=2, column=1
         )
-        content_entry = Entry(
-            new_window, width=60, relief=RIDGE, font=("HYWenHei-85W", 16)
-        )
-        content_entry.grid(row=2, column=2)
+        content_entry = Entry(new_window, width=60, font=("HYWenHei-85W", 16))
+        theme.style_entry(content_entry)
+        content_entry.grid(row=2, column=2, padx=6, pady=4)
         if content_text:
             content_entry.insert(0, content_text)
 
@@ -1017,11 +1204,11 @@ class HomeworkTool:
             new_window,
             width=20,
             textvariable=StringVar(new_window, value=time_value),
-            relief=FLAT,
             justify="center",
             font=("HYWenHei-85W", 16),
         )
-        time_entry.grid(row=3, column=2)
+        theme.style_entry(time_entry)
+        time_entry.grid(row=3, column=2, pady=4)
 
         time_select_frame = Frame(new_window, relief=FLAT)
         time_select_frame.grid(row=4, column=2)
@@ -1136,7 +1323,9 @@ class HomeworkTool:
         )
 
         for i in time_select:
-            i.pack(side="left", expand=True)
+            i.pack(side="left", expand=True, padx=2)
+        for i in time_select:
+            theme.style_button(i, "chip", padx=10, pady=2, font=("HYWenHei-85W", 14))
 
         # ──────────── 截止时间（可选，由开关启用，默认关闭）────────────
         Label(
@@ -1165,16 +1354,16 @@ class HomeworkTool:
         # 截止时间输入区域（含快捷按钮）；开关关闭时隐藏
         deadline_area = Frame(new_window, relief=FLAT)
         # 不加 sticky，使截止输入与“开始收集”输入行对齐且水平居中
-        deadline_area.grid(row=6, column=2)
+        deadline_area.grid(row=5, column=2)
         deadline_entry = Entry(
             deadline_area,
             width=20,
             textvariable=StringVar(deadline_area, value=_deadline_value),
-            relief=FLAT,
             justify="center",
             font=("HYWenHei-85W", 16),
         )
-        deadline_entry.pack(side="top", anchor="center")
+        theme.style_entry(deadline_entry)
+        deadline_entry.pack(side="top", anchor="center", pady=4)
 
         deadline_preset = Frame(deadline_area, relief=FLAT)
         deadline_preset.pack(side="top", anchor="center")
@@ -1222,30 +1411,41 @@ class HomeworkTool:
             ),
             ("+1天", lambda: _deadline_offset(1)),
         ]:
-            Button(
-                deadline_preset,
-                text=_label,
-                command=_cmd,
-                relief=FLAT,
-                font=("HYWenHei-85W", 16),
-            ).pack(side="left", expand=True)
+            theme.style_button(
+                Button(
+                    deadline_preset,
+                    text=_label,
+                    command=_cmd,
+                    font=("HYWenHei-85W", 16),
+                ),
+                "chip",
+                padx=10,
+                pady=2,
+                font=("HYWenHei-85W", 14),
+            ).pack(side="left", expand=True, padx=2)
 
         deadline_switch = Button(
             new_window,
             text="已启用" if deadline_on else "未启用",
-            fg="#005EFF" if deadline_on else COLOR,
+            fg=theme.ACCENT if deadline_on else theme.MUTED,
             relief=FLAT,
-            font=("HYWenHei-85W", 16),
+            font=("HYWenHei-85W", 15),
             command=lambda: None,
+            bd=0,
+            highlightthickness=0,
+            cursor="hand2",
+            padx=12,
+            pady=4,
         )
-        deadline_switch.grid(row=5, column=2, sticky="w")
+        theme.hover_bg(deadline_switch, theme.BG, theme.PANEL_HI)
+        deadline_switch.grid(row=5, column=2, sticky="w", padx=6)
 
         def toggle_deadline():
             nonlocal deadline_on
             deadline_on = not deadline_on
             deadline_switch.config(
                 text="已启用" if deadline_on else "未启用",
-                fg="#005EFF" if deadline_on else COLOR,
+                fg=theme.ACCENT if deadline_on else theme.MUTED,
             )
             if deadline_on:
                 deadline_area.grid()
@@ -1268,18 +1468,11 @@ class HomeworkTool:
             emphasize_var.set(self.emphasize_levels[emphasize_index])
         else:
             emphasize_var.set(self.emphasize_levels[0])
-        OptionMenu(new_window, emphasize_var, *self.emphasize_levels).grid(
-            row=7, column=2
-        )
+        emphasize_menu = OptionMenu(new_window, emphasize_var, *self.emphasize_levels)
+        theme.style_option_menu(emphasize_menu, font=("HYWenHei-85W", 14))
+        emphasize_menu.grid(row=7, column=2)
 
         def submit():
-            if len(self.homework_list) >= self.HOMEWORK_LIMIT and not replace_target:
-                new_window.attributes("-topmost", False)
-                if not messagebox.askyesno(
-                    "作业管理器·超过上限", "作业数量已达上限，是否强制添加？"
-                ):
-                    new_window.attributes("-topmost", True)
-                    return
             new_subject_index = self.subject_display_names.index(subject_var)
             new_subject_key = self.subject_codes[new_subject_index]
             content = content_entry.get()
@@ -1358,20 +1551,25 @@ class HomeworkTool:
             self.draw_homework()
             new_window.destroy()
 
-        Button(
-            new_window,
-            text="提交",
-            command=submit,
-            relief=FLAT,
+        theme.style_button(
+            Button(new_window, text="提交", command=submit, font=("HYWenHei-85W", 16)),
+            "accent",
+            padx=20,
+            pady=4,
             font=("HYWenHei-85W", 16),
-        ).grid(row=8, column=2, sticky="e")
-        Button(
-            new_window,
-            text="取消",
-            command=new_window.destroy,
-            relief=FLAT,
+        ).grid(row=8, column=2, sticky="e", pady=(10, 4))
+        theme.style_button(
+            Button(
+                new_window,
+                text="取消",
+                command=new_window.destroy,
+                font=("HYWenHei-85W", 16),
+            ),
+            "normal",
+            padx=20,
+            pady=4,
             font=("HYWenHei-85W", 16),
-        ).grid(row=8, column=2, sticky="w")
+        ).grid(row=8, column=2, sticky="w", pady=(10, 4))
 
         # 窗口定位：居中偏下并保证完整位于屏幕内。
         # （新增“截止时间”开关 / 输入行后窗口变高，切换开关需随之重新定位。）
@@ -1473,11 +1671,20 @@ class HomeworkTool:
         y = event.y_root - tk.winfo_rooty()
         self.mousex, self.mousey = x, y
 
-        inv = 35 if len(self.homework_list) < 10 else 30
-        self.arg = int((y - 40) // inv)
-        if self.arg >= len(self.homework_list):
-            self.arg = -1
-        # self.title.config(text=f"鼠标位置：({x}, {y}),{self.arg}")
+        # 根据当前页各条目的纵向范围定位鼠标所在作业
+        local_y = y - self.LIST_TOP
+        self.arg = -1
+        self._hover_seg_y = 0
+        acc = 0
+        for e in getattr(self, "_page_entries", []):
+            if acc <= local_y < acc + e["height"]:
+                self.arg = e["index"]
+                self._hover_seg_y = acc
+                break
+            acc += e["height"]
+
+        # 行悬停高亮
+        self._update_row_hover()
 
         self.top_frame.place(x=0, y=0, relwidth=1)
 
@@ -1486,10 +1693,33 @@ class HomeworkTool:
             self.ui_side_delete.place_forget()
             return
 
-        self.ui_side_delete.place(x=5, y=42 + self.arg * inv)
-        self.ui_side_edit.place(x=25, y=42 + self.arg * inv)
+        entry_y = getattr(self, "_hover_seg_y", 0)
+        self.ui_side_delete.place(x=5, y=self.LIST_TOP + entry_y + 2)
+        self.ui_side_edit.place(x=25, y=self.LIST_TOP + entry_y + 2)
         self.ui_side_delete.config(command=lambda: self.delete_homework(self.arg))
         self.ui_side_edit.config(command=lambda: self.edit_homework(self.arg))
+
+    def _update_row_hover(self):
+        """行悬停时提亮该条目文字，离开时还原（配合左侧操作按钮）。"""
+        idx = getattr(self, "arg", -1)
+        prev = getattr(self, "_hover_idx", -1)
+        if idx == prev:
+            return
+        canvas_map = getattr(self, "_entry_canvas", {})
+        fills = getattr(self, "_entry_fill", {})
+        for item_id in canvas_map.get(prev, []):
+            try:
+                self.list_canvas.itemconfig(
+                    item_id, fill=fills.get(prev, theme.FG)
+                )
+            except Exception:
+                pass
+        for item_id in canvas_map.get(idx, []):
+            try:
+                self.list_canvas.itemconfig(item_id, fill=theme.FG_HOVER)
+            except Exception:
+                pass
+        self._hover_idx = idx
 
     def exit(self):
         homeworkfunc.uri_classisland("homeworkmode-off")
