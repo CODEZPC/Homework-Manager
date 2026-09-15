@@ -5,7 +5,6 @@ main.spec
 *-backup.*
 __pycache__
 /lock
-main.exe
 homework.json
 homework_stress.json
 setting.json

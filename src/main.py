@@ -35,8 +35,8 @@ COLOR = theme.MUTED
 DEBUG = False
 DATA = "homework.json"
 PAGE_ROTATE_MS = 12000  # 作业超出一页时，每页停留时间（毫秒）
-VERSION = "1.7.0"
-VERSION_NUM = 1007000000
+VERSION = "1.7.2"
+VERSION_NUM = 1007002000
 tk = None
 
 
@@ -117,6 +117,7 @@ class HomeworkTool:
         self._entry_canvas = {}
         self._entry_fill = {}
         self._page_rotate_aid = None
+        self._page_fade_aid = None
         self._hover_idx = -1
         self.arg = -1
 
@@ -486,6 +487,7 @@ class HomeworkTool:
                 )
                 label.place(x=self.POSITION_TIME_DISPLAY_X, y=self.LIST_TOP + y + 2)
                 e["label"] = label
+                e["label_fg"] = chip_fg
                 self.time_list.append(label)
                 if status == 4:
                     upload = 1
@@ -519,16 +521,145 @@ class HomeworkTool:
                 pass
             self._page_rotate_aid = None
 
-    def _page_rotate_tick(self):
-        """切换到下一页并重绘。"""
-        self._page = (self._page + 1) % max(1, getattr(self, "_page_count", 1))
+    def _cancel_page_fade(self):
+        """取消正在执行的分页淡入淡出动画。"""
+        aid = getattr(self, "_page_fade_aid", None)
+        if aid is not None:
+            try:
+                tk.after_cancel(aid)
+            except Exception:
+                pass
+            self._page_fade_aid = None
+
+    def _change_page(self, offset):
+        """按偏移量手动切换页面，并重置自动轮播计时。"""
+        page_count = max(1, getattr(self, "_page_count", 1))
+        if page_count <= 1:
+            return
+        self._cancel_page_rotation()
+        self._cancel_page_fade()
+        self._page = (self._page + offset) % page_count
+        self._crossfade_page()
+
+    def _page_previous(self):
+        """切换到上一页。"""
+        self._change_page(-1)
+
+    def _page_next(self):
+        """切换到下一页。"""
+        self._change_page(1)
+
+    def _fade_page(self, fade_in=False, step=0, steps=8, interval=30, on_end=None):
+        """让当前页的作业文本和时间标签淡入或淡出。"""
+        background = theme.BG
+        progress = step / (steps - 1) if steps > 1 else 1.0
         try:
-            upload = self._render_page()
-            if upload:
-                homeworkfunc.uri_classisland("Homeworkmode-upload")
+            if fade_in and step == 0:
+                for entry in getattr(self, "_page_entries", []):
+                    label = entry.get("label")
+                    if label is not None:
+                        entry["fade_bg"] = label.cget("bg")
+            if fade_in:
+                for entry in getattr(self, "_page_entries", []):
+                    fill = entry.get("fill", theme.FG)
+                    color = self._rgb_to_hex(
+                        tuple(
+                            self._hex_to_rgb(background)[i]
+                            + (self._hex_to_rgb(fill)[i] - self._hex_to_rgb(background)[i])
+                            * progress
+                            for i in range(3)
+                        )
+                    )
+                    for item_id in entry.get("canvas", []):
+                        self.list_canvas.itemconfig(item_id, fill=color)
+                    label = entry.get("label")
+                    if label is not None:
+                        label.config(
+                            bg=self._rgb_to_hex(
+                                tuple(
+                                    self._hex_to_rgb(background)[i]
+                                    + (self._hex_to_rgb(label.cget("bg"))[i] - self._hex_to_rgb(background)[i])
+                                    * progress
+                                    for i in range(3)
+                                )
+                            ),
+                            fg=self._rgb_to_hex(
+                                tuple(
+                                    self._hex_to_rgb(background)[i]
+                                    + (self._hex_to_rgb(entry.get("label_fg", background))[i] - self._hex_to_rgb(background)[i])
+                                    * progress
+                                    for i in range(3)
+                                )
+                            ),
+                        )
+            else:
+                for entry in getattr(self, "_page_entries", []):
+                    for item_id in entry.get("canvas", []):
+                        self.list_canvas.itemconfig(
+                            item_id,
+                            fill=self._rgb_to_hex(
+                                tuple(
+                                    self._hex_to_rgb(entry.get("fill", theme.FG))[i]
+                                    + (self._hex_to_rgb(background)[i] - self._hex_to_rgb(entry.get("fill", theme.FG))[i])
+                                    * progress
+                                    for i in range(3)
+                                )
+                            ),
+                        )
+                    label = entry.get("label")
+                    if label is not None:
+                        label.config(
+                            bg=self._rgb_to_hex(
+                                tuple(
+                                    self._hex_to_rgb(entry.get("fade_bg", background))[i]
+                                    + (self._hex_to_rgb(background)[i] - self._hex_to_rgb(label.cget("bg"))[i])
+                                    * progress
+                                    for i in range(3)
+                                )
+                            ),
+                            fg=self._rgb_to_hex(
+                                tuple(
+                                    self._hex_to_rgb(label.cget("fg"))[i]
+                                    + (self._hex_to_rgb(background)[i] - self._hex_to_rgb(label.cget("fg"))[i])
+                                    * progress
+                                    for i in range(3)
+                                )
+                            ),
+                        )
         except Exception:
-            pass
-        self._start_page_rotation()
+            if on_end:
+                on_end()
+            return
+
+        if step < steps - 1:
+            self._page_fade_aid = tk.after(
+                interval,
+                lambda: self._fade_page(fade_in, step + 1, steps, interval, on_end),
+            )
+        elif on_end:
+            self._page_fade_aid = None
+            on_end()
+
+    def _crossfade_page(self):
+        """将当前页淡出，渲染下一页后再淡入。"""
+        def render_next_page():
+            try:
+                upload = self._render_page()
+                if upload:
+                    homeworkfunc.uri_classisland("Homeworkmode-upload")
+                self._fade_page(fade_in=True, on_end=self._start_page_rotation)
+            except Exception:
+                self._start_page_rotation()
+
+        if not getattr(self, "_page_entries", []):
+            render_next_page()
+            return
+        self._fade_page(fade_in=False, on_end=render_next_page)
+
+    def _page_rotate_tick(self):
+        """淡出当前页，切换到下一页后淡入。"""
+        self._page = (self._page + 1) % max(1, getattr(self, "_page_count", 1))
+        self._crossfade_page()
 
     def _deadline_of(self, item):
         """读取作业项的截止时间戳；仅接受数值，返回 0 表示未启用截止时间。"""
@@ -930,6 +1061,26 @@ class HomeworkTool:
         _pack_info(self.ui_info_load)
         _pack_info(self.ui_info_mouse)
         _pack_info(self.ui_info_tick)
+        self.ui_page_prev = Button(
+            self.info_frame,
+            text="↑",
+            command=self._page_previous,
+            font=("JetBrains Mono", 10),
+            relief=FLAT,
+            width=2,
+        )
+        self.ui_page_next = Button(
+            self.info_frame,
+            text="↓",
+            command=self._page_next,
+            font=("JetBrains Mono", 10),
+            relief=FLAT,
+            width=2,
+        )
+        theme.style_button(self.ui_page_prev, "normal", padx=2, pady=0, font=("JetBrains Mono", 10))
+        theme.style_button(self.ui_page_next, "normal", padx=2, pady=0, font=("JetBrains Mono", 10))
+        _pack_info(self.ui_page_prev)
+        self.ui_page_next.pack(side="left", padx=2)
         _pack_info(self.ui_info_message)
 
         self.ui_info_message.bind("<Button-1>", updater.response)

@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1007000000,
-  "VERSION": "1.7.0",
-  "NAME": "UI重构",
-  "TYPE": "Appearence"
+  "VERSION_NUM": 1007002000,
+  "VERSION": "1.7.2",
+  "NAME": "手动翻页支持",
+  "TYPE": "Functional"
 }
