@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1007002000,
-  "VERSION": "1.7.2",
-  "NAME": "手动翻页支持",
-  "TYPE": "Functional"
+  "VERSION_NUM": 1007003000,
+  "VERSION": "1.7.3",
+  "NAME": "UI修改",
+  "TYPE": "Appearence"
 }

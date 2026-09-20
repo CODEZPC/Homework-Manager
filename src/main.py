@@ -35,8 +35,8 @@ COLOR = theme.MUTED
 DEBUG = False
 DATA = "homework.json"
 PAGE_ROTATE_MS = 12000  # 作业超出一页时，每页停留时间（毫秒）
-VERSION = "1.7.2"
-VERSION_NUM = 1007002000
+VERSION = "1.7.3"
+VERSION_NUM = 1007003000
 tk = None
 
 
@@ -1007,7 +1007,7 @@ class HomeworkTool:
             self.main_frame, text="E", fg=COLOR, relief=FLAT, font=("JetBrains Mono", 8)
         )
         # 保持原有尺寸/占位与配色，仅增加悬停反馈
-        theme.style_button(self.ui_side_delete, "normal", keep_geometry=True)
+        theme.style_button(self.ui_side_delete, "danger", keep_geometry=True)
         theme.style_button(self.ui_side_edit, "normal", keep_geometry=True)
 
         # 创建用于显示作业列表的 Canvas（替代多个 Label）
@@ -1261,16 +1261,46 @@ class HomeworkTool:
         existing_deadline=None,
         replace_target=None,
     ):
-        new_window = Toplevel(tk)
-        new_window.title("作业管理器·新建作业")
-        new_window.config(bg=theme.BG)
-        new_window.resizable(False, False)
-        new_window.attributes("-topmost", True)
+        # ── 页面式 UI：与菜单页 / 帮助页一致，内置于主窗口（覆盖整个窗口）──
+        page = Frame(tk, bg=theme.BG, relief=FLAT)
+        page.place(x=0, y=0, relheight=1, relwidth=1)
 
-        Label(new_window, text=" ").grid(row=0, column=0)
-        Label(new_window, text=" ").grid(row=999, column=999)
+        # 顶部栏：右侧取消按钮（与菜单页“退出菜单”的位置、样式一致）
+        page_top = Frame(page, bg=theme.BG, relief=FLAT)
+        page_top.place(x=0, y=0, relwidth=1)
+        page_cancel = Button(
+            page_top,
+            text="取消",
+            fg=theme.MUTED,
+            font=("汉仪文黑-85W", 14),
+            relief=FLAT,
+            command=page.destroy,
+        )
+        theme.style_button(
+            page_cancel, "normal", padx=14, pady=4, font=("汉仪文黑-85W", 14)
+        )
+        page_cancel.pack(side="right", padx=(2, 14), pady=6)
 
-        Label(new_window, text="科目", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
+        # 标题：居左（与菜单页“科目管理”一致：左侧色条 + 标题）
+        title_frame = Frame(page, relief=FLAT)
+        title_frame.place(x=20, y=30)
+        Frame(title_frame, width=3, height=18, bg=theme.ACCENT).pack(
+            side="left", padx=(0, 8)
+        )
+        Label(
+            title_frame,
+            text="编辑作业" if replace_target else "新建作业",
+            fg=theme.FG,
+            font=("HYWenHei-85W", 16),
+        ).pack(side="left")
+
+        # 表单容器：整体靠左放置（与菜单页内容一样从 x=20 开始）；
+        # 宽度随窗口（屏幕）变化，输入列（col2）占满标签列右侧的剩余区域。
+        form = Frame(page, relief=FLAT)
+        form.place(x=20, y=70, relwidth=1, width=-40)
+        form.grid_columnconfigure(2, weight=1)
+
+        Label(form, text="科目", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
             row=1, column=1
         )
 
@@ -1290,7 +1320,7 @@ class HomeworkTool:
             objects[index].configure(fg=theme.ACCENT)
 
         # TODO SUBJECT SELECT
-        subject_select_frame = Frame(new_window, relief=FLAT)
+        subject_select_frame = Frame(form, relief=FLAT)
         subject_select_frame.grid(row=1, column=2)
 
         num = len(self.subject_display_names)
@@ -1324,17 +1354,17 @@ class HomeworkTool:
             btn.pack(side="left", expand=True, padx=2)
             subject_select.append(btn)
 
-        Label(new_window, text="内容", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
+        Label(form, text="内容", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
             row=2, column=1
         )
-        content_entry = Entry(new_window, width=60, font=("HYWenHei-85W", 16))
+        content_entry = Entry(form, width=60, font=("HYWenHei-85W", 16))
         theme.style_entry(content_entry)
         content_entry.grid(row=2, column=2, padx=6, pady=4)
         if content_text:
             content_entry.insert(0, content_text)
 
         Label(
-            new_window, text="开始收集", bg="#23272E", font=("HYWenHei-85W", 16)
+            form, text="开始收集", bg="#23272E", font=("HYWenHei-85W", 16)
         ).grid(row=3, column=1)
 
         # * 重要：时间解析位（开始收集时间）
@@ -1352,16 +1382,16 @@ class HomeworkTool:
             time_value = time.strftime("%Y/%m/%d 22:30", time.localtime(time.time()))
 
         time_entry = Entry(
-            new_window,
+            form,
             width=20,
-            textvariable=StringVar(new_window, value=time_value),
+            textvariable=StringVar(form, value=time_value),
             justify="center",
             font=("HYWenHei-85W", 16),
         )
         theme.style_entry(time_entry)
         time_entry.grid(row=3, column=2, pady=4)
 
-        time_select_frame = Frame(new_window, relief=FLAT)
+        time_select_frame = Frame(form, relief=FLAT)
         time_select_frame.grid(row=4, column=2)
 
         time_select = []
@@ -1480,7 +1510,7 @@ class HomeworkTool:
 
         # ──────────── 截止时间（可选，由开关启用，默认关闭）────────────
         Label(
-            new_window, text="截止时间", bg="#23272E", font=("HYWenHei-85W", 16)
+            form, text="截止时间", bg="#23272E", font=("HYWenHei-85W", 16)
         ).grid(row=5, column=1)
 
         # 解析已有截止时间的初值
@@ -1503,7 +1533,7 @@ class HomeworkTool:
         deadline_on = _deadline_existing
 
         # 截止时间输入区域（含快捷按钮）；开关关闭时隐藏
-        deadline_area = Frame(new_window, relief=FLAT)
+        deadline_area = Frame(form, relief=FLAT)
         # 不加 sticky，使截止输入与“开始收集”输入行对齐且水平居中
         deadline_area.grid(row=5, column=2)
         deadline_entry = Entry(
@@ -1576,7 +1606,7 @@ class HomeworkTool:
             ).pack(side="left", expand=True, padx=2)
 
         deadline_switch = Button(
-            new_window,
+            form,
             text="已启用" if deadline_on else "未启用",
             fg=theme.ACCENT if deadline_on else theme.MUTED,
             relief=FLAT,
@@ -1602,24 +1632,23 @@ class HomeworkTool:
                 deadline_area.grid()
             else:
                 deadline_area.grid_remove()
-            _reposition()
 
         deadline_switch.config(command=toggle_deadline)
 
         if not deadline_on:
             deadline_area.grid_remove()
 
-        Label(new_window, text="优先级", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
+        Label(form, text="优先级", bg="#23272E", font=("HYWenHei-85W", 16)).grid(
             row=7, column=1
         )
-        emphasize_var = StringVar(new_window)
+        emphasize_var = StringVar(form)
         if emphasize_index is not None and 0 <= emphasize_index < len(
             self.emphasize_levels
         ):
             emphasize_var.set(self.emphasize_levels[emphasize_index])
         else:
             emphasize_var.set(self.emphasize_levels[0])
-        emphasize_menu = OptionMenu(new_window, emphasize_var, *self.emphasize_levels)
+        emphasize_menu = OptionMenu(form, emphasize_var, *self.emphasize_levels)
         theme.style_option_menu(emphasize_menu, font=("HYWenHei-85W", 14))
         emphasize_menu.grid(row=7, column=2)
 
@@ -1700,45 +1729,30 @@ class HomeworkTool:
             with open(DATA, "w", encoding="utf-8") as f:
                 json.dump(self.data, f, ensure_ascii=False, indent=4)
             self.draw_homework()
-            new_window.destroy()
+            page.destroy()
 
+        # 操作按钮：居左排布（内嵌页面后不再需要随开关重新定位窗口）
+        button_row = Frame(form, relief=FLAT)
+        button_row.grid(row=8, column=2, sticky="w", pady=(10, 4))
         theme.style_button(
-            Button(new_window, text="提交", command=submit, font=("HYWenHei-85W", 16)),
+            Button(button_row, text="提交", command=submit, font=("HYWenHei-85W", 16)),
             "accent",
             padx=20,
             pady=4,
             font=("HYWenHei-85W", 16),
-        ).grid(row=8, column=2, sticky="e", pady=(10, 4))
+        ).pack(side="left")
         theme.style_button(
             Button(
-                new_window,
+                button_row,
                 text="取消",
-                command=new_window.destroy,
+                command=page.destroy,
                 font=("HYWenHei-85W", 16),
             ),
             "normal",
             padx=20,
             pady=4,
             font=("HYWenHei-85W", 16),
-        ).grid(row=8, column=2, sticky="w", pady=(10, 4))
-
-        # 窗口定位：居中偏下并保证完整位于屏幕内。
-        # （新增“截止时间”开关 / 输入行后窗口变高，切换开关需随之重新定位。）
-        def _reposition():
-            new_window.update_idletasks()
-            sw = new_window.winfo_screenwidth()
-            sh = new_window.winfo_screenheight()
-            ww = max(60, new_window.winfo_reqwidth())
-            wh = max(40, new_window.winfo_reqheight())
-            x = (sw - ww) // 2
-            y = int((sh - wh) * 0.72)  # 0.5 为正中，这里略偏下
-            if y < 10:
-                y = 10
-            if y + wh > sh - 10:
-                y = max(10, sh - wh - 40)
-            new_window.geometry(f"{ww}x{wh}+{x}+{y}")
-
-        _reposition()
+        ).pack(side="left", padx=(10, 0))
 
     def _import_extra_subjects(self, extra_keys):
         """
