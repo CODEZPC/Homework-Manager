@@ -35,8 +35,8 @@ COLOR = theme.MUTED
 DEBUG = False
 DATA = "homework.json"
 PAGE_ROTATE_MS = 12000  # 作业超出一页时，每页停留时间（毫秒）
-VERSION = "1.7.3"
-VERSION_NUM = 1007003000
+VERSION = "1.7.3.1"
+VERSION_NUM = 1007003001
 tk = None
 
 
@@ -554,11 +554,6 @@ class HomeworkTool:
         background = theme.BG
         progress = step / (steps - 1) if steps > 1 else 1.0
         try:
-            if fade_in and step == 0:
-                for entry in getattr(self, "_page_entries", []):
-                    label = entry.get("label")
-                    if label is not None:
-                        entry["fade_bg"] = label.cget("bg")
             if fade_in:
                 for entry in getattr(self, "_page_entries", []):
                     fill = entry.get("fill", theme.FG)
@@ -574,11 +569,16 @@ class HomeworkTool:
                         self.list_canvas.itemconfig(item_id, fill=color)
                     label = entry.get("label")
                     if label is not None:
+                        if "fade_bg" not in entry or "fade_fg" not in entry:
+                            # 首次触及时补拍起始颜色（含动画途中条目被重新渲染的情况），
+                            # 保证渐变目标取自有色快照，而不是被逐帧改写的控件属性
+                            entry["fade_bg"] = label.cget("bg")
+                            entry["fade_fg"] = label.cget("fg")
                         label.config(
                             bg=self._rgb_to_hex(
                                 tuple(
                                     self._hex_to_rgb(background)[i]
-                                    + (self._hex_to_rgb(label.cget("bg"))[i] - self._hex_to_rgb(background)[i])
+                                    + (self._hex_to_rgb(entry.get("fade_bg", background))[i] - self._hex_to_rgb(background)[i])
                                     * progress
                                     for i in range(3)
                                 )
@@ -608,19 +608,23 @@ class HomeworkTool:
                         )
                     label = entry.get("label")
                     if label is not None:
+                        if "fade_bg" not in entry or "fade_fg" not in entry:
+                            # 首次触及时补拍起始颜色（含动画途中条目被重新渲染的情况）
+                            entry["fade_bg"] = label.cget("bg")
+                            entry["fade_fg"] = label.cget("fg")
                         label.config(
                             bg=self._rgb_to_hex(
                                 tuple(
                                     self._hex_to_rgb(entry.get("fade_bg", background))[i]
-                                    + (self._hex_to_rgb(background)[i] - self._hex_to_rgb(label.cget("bg"))[i])
+                                    + (self._hex_to_rgb(background)[i] - self._hex_to_rgb(entry.get("fade_bg", background))[i])
                                     * progress
                                     for i in range(3)
                                 )
                             ),
                             fg=self._rgb_to_hex(
                                 tuple(
-                                    self._hex_to_rgb(label.cget("fg"))[i]
-                                    + (self._hex_to_rgb(background)[i] - self._hex_to_rgb(label.cget("fg"))[i])
+                                    self._hex_to_rgb(entry.get("fade_fg", background))[i]
+                                    + (self._hex_to_rgb(background)[i] - self._hex_to_rgb(entry.get("fade_fg", background))[i])
                                     * progress
                                     for i in range(3)
                                 )
@@ -683,6 +687,7 @@ class HomeworkTool:
         - 未启用截止时间：沿用原有“开始收集”显示逻辑；
         - 启用了截止时间：
             · 尚未开始收集、距开始尚早 → “xx:xx起”与“xx:xx截止”轮播；
+            · 距开始收集不足 5 分钟 → “即将允许提交”与“xx:xx截止”轮播；
             · 已开始收集（即使超过 5 分钟）但截止未到 → “可提交”与“xx:xx截止”轮播；
             · 未设开始收集（不收）→ 单独显示“xx:xx截止”；
             · 自定义文本 → 在自定义信息与“xx:xx截止”间轮播；
@@ -711,6 +716,13 @@ class HomeworkTool:
         if num_t and t > now + homeworkfunc.TIME_OUT and open_deadline:
             if getattr(self, "_rot", 0) == 0:
                 return homeworkfunc.analyze_time(t, em)[0][:-1] + "起"
+            return homeworkfunc.analyze_time(d, em, word="截止")[0]
+
+        # 距开始收集不足 5 分钟且启用了截止时间 → 轮播 “即将允许提交” / “xx:xx截止”
+        # （截止开放时该阶段不应显示“即将收”）
+        if num_t and now < t <= now + homeworkfunc.TIME_OUT and open_deadline:
+            if getattr(self, "_rot", 0) == 0:
+                return "即将允许提交"
             return homeworkfunc.analyze_time(d, em, word="截止")[0]
 
         # 自定义文本（字符串时间）且截止未到 → 在自定义信息与截止时间间轮播

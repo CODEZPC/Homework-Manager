@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1007003000,
-  "VERSION": "1.7.3",
-  "NAME": "UI修改",
-  "TYPE": "Appearence"
+  "VERSION_NUM": 1007003001,
+  "VERSION": "1.7.3.1",
+  "NAME": "修复bug",
+  "TYPE": "bugfix"
 }
