@@ -173,3 +173,31 @@ def style_option_menu(om, font=None):
     except Exception:
         pass
     return om
+
+
+def style_spinbox(spin, font=None):
+    """为 Spinbox（数值输入框）应用统一的扁平样式（含箭头按钮底色）。"""
+    opts = dict(
+        relief=FLAT,
+        bd=0,
+        bg=PANEL,
+        fg=FG,
+        insertbackground=ACCENT,
+        selectbackground=ACCENT,
+        selectforeground="#FFFFFF",
+        highlightthickness=1,
+        highlightbackground=BORDER,
+        highlightcolor=ACCENT,
+        buttonbackground=PANEL,
+        activebackground=PANEL_HI,
+        disabledbackground=PANEL,
+        disabledforeground=DIM,
+        justify="center",
+    )
+    if font is not None:
+        opts["font"] = font
+    try:
+        spin.configure(**opts)
+    except Exception:
+        pass
+    return spin

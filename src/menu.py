@@ -421,6 +421,148 @@ class Menu:
         _menu_btn("上移", self._move_subject_up)
         _menu_btn("下移", self._move_subject_down)
 
+        # ── 选项（轮播时间参数） ──
+        options_title_frame = Frame(self.menu_frame, relief=FLAT)
+        options_title_frame.place(x=20, y=452)
+        Frame(options_title_frame, width=3, height=18, bg=theme.ACCENT).pack(
+            side="left", padx=(0, 8)
+        )
+        Label(
+            options_title_frame,
+            text="选项",
+            fg=theme.FG,
+            font=("汉仪文黑-85W", 16),
+        ).pack(side="left")
+
+        options_frame = Frame(self.menu_frame, relief=FLAT)
+        options_frame.place(x=20, y=492)
+
+        def _make_spin():
+            spin = Spinbox(
+                options_frame,
+                from_=1,
+                to=3600,
+                increment=1,
+                width=6,
+                font=("JetBrains Mono", 12),
+            )
+            theme.style_spinbox(spin, font=("JetBrains Mono", 12))
+            return spin
+
+        self._page_spin = _make_spin()  # 翻页等待时长（秒）
+        self._rot_spin = _make_spin()  # 显示时间轮播时长（秒）
+
+        def _opt_row(row, text, spin):
+            Label(
+                options_frame,
+                text=text,
+                fg=theme.FG,
+                font=("汉仪文黑-85W", 14),
+            ).grid(row=row, column=0, sticky="w", pady=4)
+            spin.grid(row=row, column=1, padx=(12, 6), pady=4)
+            Label(
+                options_frame,
+                text="秒",
+                fg=theme.MUTED,
+                font=("汉仪文黑-85W", 14),
+            ).grid(row=row, column=2, sticky="w")
+
+        _opt_row(0, "翻页等待时长", self._page_spin)
+        _opt_row(1, "显示时间轮播时长", self._rot_spin)
+
+        self._options_apply = Button(
+            options_frame,
+            text="应用",
+            command=self._apply_options,
+            fg=theme.MUTED,
+            font=("汉仪文黑-85W", 14),
+            relief=FLAT,
+        )
+        theme.style_button(
+            self._options_apply, "accent", padx=16, pady=4, font=("汉仪文黑-85W", 14)
+        )
+        self._options_apply.grid(row=2, column=0, sticky="w", pady=(12, 0))
+        Label(
+            options_frame,
+            text="修改后立即生效（无需重启）",
+            fg=theme.DIM,
+            font=("汉仪文黑-85W", 12),
+        ).grid(row=2, column=1, columnspan=2, sticky="w", padx=(12, 0), pady=(12, 0))
+
+        self._load_options()
+
+    # ──────────────── 选项（轮播时间参数） ────────────────
+
+    def _load_options(self):
+        """读取 setting.json 的 Rotation 段，换算为秒填入输入框。"""
+        self._set_spin(
+            self._page_spin, main.get_rotation_ms("PageMs", main.PAGE_ROTATE_MS)
+        )
+        self._set_spin(
+            self._rot_spin, main.get_rotation_ms("DeadlineMs", main.DEADLINE_ROTATE_MS)
+        )
+
+    @staticmethod
+    def _set_spin(spin, ms):
+        """把毫秒时间写入 Spinbox（显示为秒，至少 1 秒）。"""
+        try:
+            spin.delete(0, "end")
+            spin.insert(0, str(max(1, int(round(ms / 1000.0)))))
+        except Exception:
+            pass
+
+    def _read_spin(self, spin, key, default_ms):
+        """读取并校验输入框中的秒数：非法输入回退为当前配置值，范围 1~3600。"""
+        raw = ""
+        try:
+            raw = spin.get().strip()
+        except Exception:
+            pass
+        try:
+            seconds = int(float(raw))
+        except Exception:
+            seconds = int(round(main.get_rotation_ms(key, default_ms) / 1000.0))
+        seconds = max(1, min(3600, seconds))
+        self._set_spin(spin, seconds * 1000)
+        return seconds
+
+    def _apply_options(self):
+        """把两个轮播时长（秒）写回 setting.json，并让主界面立即按新间隔重排定时器。"""
+        page_s = self._read_spin(self._page_spin, "PageMs", main.PAGE_ROTATE_MS)
+        rot_s = self._read_spin(self._rot_spin, "DeadlineMs", main.DEADLINE_ROTATE_MS)
+
+        try:
+            with open(paths.CONFIG_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                data = {}
+            rotation = data.get("Rotation")
+            if not isinstance(rotation, dict):
+                rotation = {}
+            rotation["PageMs"] = page_s * 1000
+            rotation["DeadlineMs"] = rot_s * 1000
+            data["Rotation"] = rotation
+            paths.ensure_dirs()
+            with open(paths.CONFIG_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+        except Exception:
+            pass
+
+        # 主界面按新间隔立即重排轮播定时器（无需重启）
+        try:
+            main.apply_rotation_settings()
+        except Exception:
+            pass
+
+        # 保存反馈：按钮短暂显示“已应用”
+        try:
+            self._options_apply.config(text="已应用")
+            self.menu_frame.after(
+                1500, lambda: self._options_apply.config(text="应用")
+            )
+        except Exception:
+            pass
+
     def change(self, key, value, restart=False):
         with open(paths.CONFIG_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)

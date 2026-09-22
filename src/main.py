@@ -37,9 +37,10 @@ DEBUG = False
 DATA = "homework.json"
 PAGE_ROTATE_MS = 12000  # 翻页轮播默认间隔（毫秒）；可由 setting.json 的 Rotation.PageMs 覆盖
 DEADLINE_ROTATE_MS = 5000  # 「收 / 截止」文案轮播默认间隔（毫秒）；对应 Rotation.DeadlineMs
-VERSION = "1.8.0"
-VERSION_NUM = 1008000000
+VERSION = "1.8.1"
+VERSION_NUM = 1008001000
 tk = None
+app = None  # HomeworkTool 实例（main() 中赋值，供 menu 等模块触发运行时刷新）
 
 
 def get_rotation_ms(key, default):
@@ -60,6 +61,23 @@ def get_rotation_ms(key, default):
         return max(1000, int(value))
     except Exception:
         return default
+
+
+def apply_rotation_settings():
+    """
+    Rotation（轮播时间参数）修改后，立即按新间隔重排轮播定时器。
+
+    由菜单「选项」保存后调用；主界面尚未启动（app 为 None）时不处理，
+    单个定时器失败不影响其它。
+    """
+    instance = app
+    if instance is None:
+        return
+    for starter in ("_start_page_rotation", "_start_deadline_rotation"):
+        try:
+            getattr(instance, starter)()
+        except Exception:
+            pass
 
 
 def acquire_lock(lock_path=None):
@@ -1987,7 +2005,7 @@ def main():
         sys.exit(0)
 
     # 创建全局 tk（保持与原代码兼容）并启动应用
-    global tk
+    global tk, app
     tk = Tk()
     app = HomeworkTool()
 
