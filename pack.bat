@@ -7,11 +7,4 @@ RMDIR dist /s /q
 RMDIR build /s /q
 DEL main.spec
 
-rem ==== 2) onefile legacy build: docs\main.exe (for old clients downloading only main.exe) ====
-pyinstaller -F -w .\src\main.py -i .\src\HM.ico
-MOVE /Y dist\main.exe docs\main.exe
-RMDIR dist /s /q
-RMDIR build /s /q
-DEL main.spec
-
 pause
