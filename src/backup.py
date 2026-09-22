@@ -3,8 +3,10 @@ import os
 import shutil
 import time
 
-# 备份目录（相对程序当前工作目录，与 homework.json 等数据文件同级）
-BACKUP_DIR = os.path.join(".", "backup")
+import paths
+
+# 备份目录：_internal/backup（旧版根目录 backup/ 会在启动时自动迁移到该位置）
+BACKUP_DIR = paths.BACKUP_DIR
 KEEP_COUNT = 20  # 每种 tag 保留的最近备份份数
 
 
@@ -26,7 +28,7 @@ def _digest_file(path):
 
 
 def _list_backups(tag):
-    """返回 backup/ 下属于该 tag 的备份文件名（新 → 旧）。"""
+    """返回 _internal/backup/ 下属于该 tag 的备份文件名（新 → 旧）。"""
     try:
         names = [
             n
@@ -41,7 +43,7 @@ def _list_backups(tag):
 
 def backup_file(path, tag="homework", keep=KEEP_COUNT):
     """
-    将数据文件备份到 backup/ 目录，命名为 backup/<tag>_<时间戳>.json。
+    将数据文件备份到 _internal/backup/ 目录，命名为 <tag>_<时间戳>.json。
 
     - 源文件缺失 / 不可读时返回 None；
     - 与最新一份备份内容一致（md5 相同）时跳过，不产生重复文件；
@@ -90,14 +92,14 @@ def backup_file(path, tag="homework", keep=KEEP_COUNT):
 
 
 def list_backups(tag="homework"):
-    """列出 backup/ 下某 tag 的备份文件名（新 → 旧）。"""
+    """列出 _internal/backup/ 下某 tag 的备份文件名（新 → 旧）。"""
     return _list_backups(tag)
 
 
 def backup_all():
     """备份核心数据文件：homework.json 与 setting.json。"""
     backup_file("homework.json", tag="homework")
-    backup_file("setting.json", tag="setting")
+    backup_file(paths.CONFIG_FILE, tag="setting")
 
 
 if __name__ == "__main__":

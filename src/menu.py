@@ -6,6 +6,7 @@ import os
 
 import main
 import backup
+import paths
 import theme
 
 
@@ -18,24 +19,28 @@ class Menu:
     # ──────────────── 科目数据读写 ────────────────
 
     def _load_subjects_from_settings(self):
-        """从 setting.json 读取 Subjects 字典。"""
+        """从 _internal/config/setting.json 读取 Subjects 字典。"""
         try:
-            with open("setting.json", "r", encoding="utf-8") as f:
+            with open(paths.CONFIG_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
             self._subjects = data.get("Subjects", {})
         except Exception:
             self._subjects = {}
 
     def _save_subjects_to_settings(self):
-        """将 Subjects 写回 setting.json。"""
+        """将 Subjects 写回 _internal/config/setting.json。"""
         try:
-            with open("setting.json", "r", encoding="utf-8") as f:
+            with open(paths.CONFIG_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except Exception:
             data = {}
         data["Subjects"] = self._subjects
-        with open("setting.json", "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
+        try:
+            paths.ensure_dirs()
+            with open(paths.CONFIG_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+        except Exception:
+            pass
 
     def _sync_homework_json(self):
         """确保 homework.json 中包含所有已配置科目键（缺失则初始化为 []）。
@@ -417,10 +422,10 @@ class Menu:
         _menu_btn("下移", self._move_subject_down)
 
     def change(self, key, value, restart=False):
-        with open("setting.json", "r") as f:
+        with open(paths.CONFIG_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
         data[key] = value
-        with open("setting.json", "w") as f:
+        with open(paths.CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
         if restart:
             messagebox.showinfo(

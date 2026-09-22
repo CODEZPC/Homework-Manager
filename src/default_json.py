@@ -1,11 +1,18 @@
 import json
 import os
 
+import paths
+
 KEYS = ["Subjects"]
 VALUES = [{"Default": "Default"}]
 
-SETTING_FILE = "setting.json"
+# 配置文件位置：_internal/config/setting.json（旧版根目录 setting.json 会自动迁移）
+SETTING_FILE = paths.CONFIG_FILE
 HOMEWORK_FILE = "homework.json"
+
+# 轮播时间参数默认值（毫秒）：截止时间文案轮播 / 分页轮播。
+# 写入 setting.json 的 "Rotation" 段；后续的调节界面会修改这些键。
+ROTATION_DEFAULTS = {"DeadlineMs": 5000, "PageMs": 12000}
 
 # homework.json 中的元数据键，不参与科目恢复 / 同步
 RESERVED_META = {"VER"}
@@ -44,13 +51,18 @@ def check():
     """
     配置自检 / 修复（程序启动时自动调用）：
 
+    0. 把旧版本位于程序根目录的 setting.json / backup / lock 自动迁移到 _internal 下；
     1. 确保 setting.json 存在且可解析；
     2. 若缺少科目配置（Subjects），从 homework.json 的科目列表键恢复
        （跳过 VER 等元数据键）；homework 也缺失时回退默认科目；
     3. 若 Subjects 已存在，把 homework.json 中存在但尚未配置的科目键
        并入配置（防止该键数据丢失）；
-    4. 仅在确有变化 / 文件缺失时才写回 setting.json。
+    4. 确保 "Rotation" 段存在（轮播时间参数，见 ROTATION_DEFAULTS）；
+    5. 仅在确有变化 / 文件缺失时才写回 setting.json。
     """
+    # 旧版本文件位置自动迁移（setting.json / backup / lock → _internal 下）
+    paths.migrate_legacy()
+
     data, setting_ok = _load_json(SETTING_FILE)
     if not isinstance(data, dict):
         data = {}
@@ -91,8 +103,21 @@ def check():
     if "subjects" in data:
         del data["subjects"]
 
+    # 轮播时间参数：确保 "Rotation" 段与各项存在且为数值（供后续调节界面修改）
+    rotation = data.get("Rotation")
+    if not isinstance(rotation, dict):
+        rotation = {}
+        changed = True
+    for key, default in ROTATION_DEFAULTS.items():
+        value = rotation.get(key)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            rotation[key] = default
+            changed = True
+    data["Rotation"] = rotation
+
     if changed or not os.path.exists(SETTING_FILE):
         try:
+            paths.ensure_dirs()
             with open(SETTING_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
         except Exception:

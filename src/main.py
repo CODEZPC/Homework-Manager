@@ -20,6 +20,7 @@ import time
 import msvcrt
 
 import default_json as default_json
+import paths
 
 default_json.check()
 
@@ -34,32 +35,91 @@ import updater
 COLOR = theme.MUTED
 DEBUG = False
 DATA = "homework.json"
-PAGE_ROTATE_MS = 12000  # 作业超出一页时，每页停留时间（毫秒）
-VERSION = "1.7.3.1"
-VERSION_NUM = 1007003001
+PAGE_ROTATE_MS = 12000  # 翻页轮播默认间隔（毫秒）；可由 setting.json 的 Rotation.PageMs 覆盖
+DEADLINE_ROTATE_MS = 5000  # 「收 / 截止」文案轮播默认间隔（毫秒）；对应 Rotation.DeadlineMs
+VERSION = "1.8.0"
+VERSION_NUM = 1008000000
 tk = None
 
 
-def acquire_lock(lock_path=".\\lock\\homework.lock"):
+def get_rotation_ms(key, default):
+    """
+    读取 setting.json 中 "Rotation" 段的轮播时间参数（毫秒）。
+
+    键：`DeadlineMs`（「收 / 截止」文案轮播）/ `PageMs`（多页翻页轮播）。
+    缺失 / 非法时返回 default；最小 1000ms，避免间隔过小造成空转。
+    每次调度定时器时读取一次，后续调节界面修改配置后无需重启即可生效。
+    """
+    try:
+        with open(paths.CONFIG_FILE, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+        rotation = settings.get("Rotation", {})
+        value = rotation.get(key, default) if isinstance(rotation, dict) else default
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return default
+        return max(1000, int(value))
+    except Exception:
+        return default
+
+
+def acquire_lock(lock_path=None):
     """
     尝试获取一个简单的文件锁（Windows 下使用 msvcrt），
     成功返回打开的文件对象（必须保持引用以维持锁），失败返回 None。
+
+    锁文件默认位于 _internal/lock/homework.lock；若旧版本的 lock/homework.lock
+    仍然存在（可能有旧实例在运行），会一并探测，保证同一时间只有一个实例。
     """
-    try:
-        lock_file = open(lock_path, "w")
-        msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
-        return lock_file
-    except FileNotFoundError:
-        # 如果锁文件所在目录不存在，尝试创建目录后重试
+    if lock_path is None:
+        lock_path = paths.LOCK_FILE
+
+    def _try(path):
         try:
-            os.makedirs(os.path.dirname(lock_path), exist_ok=True)
-            lock_file = open(lock_path, "w")
+            lock_file = open(path, "w")
             msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
             return lock_file
+        except FileNotFoundError:
+            # 如果锁文件所在目录不存在，尝试创建目录后重试
+            try:
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                lock_file = open(path, "w")
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+                return lock_file
+            except Exception:
+                return None
         except Exception:
             return None
-    except PermissionError:
+
+    lock_file = _try(lock_path)
+    if lock_file is None:
         return None
+
+    # 兼容检查：旧版本锁文件残留时，探测是否被旧实例占用
+    legacy = paths.LEGACY_LOCK_FILE
+    if os.path.abspath(lock_path) != os.path.abspath(legacy) and os.path.exists(legacy):
+        probe = _try(legacy)
+        if probe is None:
+            # 旧锁被占用 → 旧实例仍在运行，放弃启动
+            try:
+                lock_file.close()
+            except Exception:
+                pass
+            return None
+        # 未被占用 → 旧锁是残留文件，清理掉
+        try:
+            probe.close()
+        except Exception:
+            pass
+        try:
+            os.remove(legacy)
+        except Exception:
+            pass
+        try:
+            os.rmdir(os.path.dirname(legacy))
+        except Exception:
+            pass
+
+    return lock_file
 
 def _app_dir() -> str:
     if getattr(sys, "frozen", False):
@@ -134,7 +194,7 @@ class HomeworkTool:
 
         # 启动前自动备份核心数据（后续升级 / 修复可能改写 homework.json）
         backup.backup_file("homework.json", tag="homework")
-        backup.backup_file("setting.json", tag="setting")
+        backup.backup_file(paths.CONFIG_FILE, tag="setting")
 
         # 自动升级旧版本 homework.json 数据（补齐 deadline 字段等）
         dataupdate.migrate()
@@ -501,10 +561,12 @@ class HomeworkTool:
         return upload
 
     def _start_page_rotation(self):
-        """页数超出一页时，按 PAGE_ROTATE_MS 间隔轮播各页。"""
+        """页数超出一页时，按 Rotation.PageMs（默认 PAGE_ROTATE_MS）间隔轮播各页。"""
         self._cancel_page_rotation()
         if getattr(self, "_page_count", 1) > 1:
-            self._page_rotate_aid = tk.after(PAGE_ROTATE_MS, self._page_rotate_tick)
+            self._page_rotate_aid = tk.after(
+                get_rotation_ms("PageMs", PAGE_ROTATE_MS), self._page_rotate_tick
+            )
             self.reminder_schedule.append(self._page_rotate_aid)
 
     def _cancel_page_rotation(self):
@@ -821,10 +883,13 @@ class HomeworkTool:
         self._fade_widget(widget, cur_fg, cur_bg, steps, interval, on_end=swap)
 
     def _start_deadline_rotation(self):
-        """启动“开始收集 / 截止”文案轮播（每 5 秒切换一次）。"""
+        """启动「开始收集 / 截止」文案轮播（间隔取 Rotation.DeadlineMs，默认 5 秒）。"""
         self._cancel_deadline_rotation()
         self._rot = 0
-        self._rot_aid = tk.after(5000, self._deadline_rotation_tick)
+        self._rot_aid = tk.after(
+            get_rotation_ms("DeadlineMs", DEADLINE_ROTATE_MS),
+            self._deadline_rotation_tick,
+        )
         self.reminder_schedule.append(self._rot_aid)
 
     def _cancel_deadline_rotation(self):
@@ -842,7 +907,7 @@ class HomeworkTool:
             self._rot_aid = None
 
     def _deadline_rotation_tick(self):
-        """每 5 秒轮播一次：就地刷新当前页各时间 Label 的文案，并同步样式。"""
+        """按 Rotation.DeadlineMs（默认 5 秒）轮播一次：就地刷新当前页各时间 Label 的文案，并同步样式。"""
         self._rot = 1 - getattr(self, "_rot", 0)
         for e in getattr(self, "_page_entries", []):
             widget = e.get("label")
@@ -877,7 +942,10 @@ class HomeworkTool:
             except Exception:
                 pass
         old = getattr(self, "_rot_aid", None)
-        self._rot_aid = tk.after(5000, self._deadline_rotation_tick)
+        self._rot_aid = tk.after(
+            get_rotation_ms("DeadlineMs", DEADLINE_ROTATE_MS),
+            self._deadline_rotation_tick,
+        )
         if old is not None:
             try:
                 self.reminder_schedule.remove(old)
@@ -1772,7 +1840,7 @@ class HomeworkTool:
         并刷新内存中的科目列表，使数据在本会话即可显示（而不是被丢弃）。
         """
         try:
-            with open("setting.json", "r", encoding="utf-8") as f:
+            with open(paths.CONFIG_FILE, "r", encoding="utf-8") as f:
                 settings = json.load(f)
         except Exception:
             settings = {}
@@ -1792,7 +1860,8 @@ class HomeworkTool:
         if changed:
             settings["Subjects"] = subjects
             try:
-                with open("setting.json", "w", encoding="utf-8") as f:
+                paths.ensure_dirs()
+                with open(paths.CONFIG_FILE, "w", encoding="utf-8") as f:
                     json.dump(settings, f, ensure_ascii=False, indent=4)
             except Exception:
                 pass

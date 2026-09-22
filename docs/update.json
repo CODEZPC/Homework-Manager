@@ -1,6 +1,6 @@
 {
-  "VERSION_NUM": 1007003001,
-  "VERSION": "1.7.3.1",
-  "NAME": "修复bug",
-  "TYPE": "bugfix"
+  "VERSION_NUM": 1008000000,
+  "VERSION": "1.8.0",
+  "NAME": "自动更新更新，配置文件更新",
+  "TYPE": "Func"
 }

@@ -11,3 +11,7 @@ setting.json
 desktop.ini
 *.log
 /backup
+/src/_internal
+/_internal/config
+/_internal/backup
+/_internal/lock

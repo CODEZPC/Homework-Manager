@@ -5,6 +5,8 @@ import re
 import subprocess
 import tkinter.font as tkfont
 
+import paths
+
 SUBJECT_CODES = [
     "C",
     "M",
@@ -37,10 +39,10 @@ SUBJECT_DISPLAY_NAMES = [
 
 
 def load_subjects():
-    """从 setting.json 动态加载科目配置，失败则回退到硬编码默认值。"""
+    """从 _internal/config/setting.json 动态加载科目配置，失败则回退到硬编码默认值。"""
     global SUBJECT_CODES, SUBJECT_DISPLAY_NAMES
     try:
-        with open("setting.json", "r", encoding="utf-8") as f:
+        with open(paths.CONFIG_FILE, "r", encoding="utf-8") as f:
             settings = json.load(f)
         subjects = settings.get("Subjects", None)
         if subjects and isinstance(subjects, dict) and len(subjects) > 0:
