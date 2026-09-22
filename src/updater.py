@@ -39,7 +39,7 @@ def check():
 
     STATUS = "Connecting"
 
-    site = f"https://codezpc.cn/Homework-Manager/update.json"
+    site = BASE_URL + "update.json"
     try:
         # 发送HTTP GET请求
         response = requests.get(site)
@@ -49,17 +49,22 @@ def check():
         STATUS = "Failed"
         return
 
-    DATA = json.loads(response.text)
-    UPDATE_NUM = DATA["VERSION_NUM"]
-    UPDATE_NAME = DATA["NAME"]
-    UPDATE_TYPE = DATA["TYPE"]
-    UPDATE_VER = DATA["VERSION"]
+    try:
+        DATA = json.loads(response.text)
+        UPDATE_NUM = DATA["VERSION_NUM"]
+        UPDATE_NAME = DATA["NAME"]
+        UPDATE_TYPE = DATA["TYPE"]
+        UPDATE_VER = DATA["VERSION"]
+        # 可选：-D 完整包（zip）。缺失时回退旧逻辑（仅下载 main.exe）。
+        package = DATA.get("PACKAGE")
+        UPDATE_PACKAGE = package.strip() if isinstance(package, str) and package.strip() else None
+    except Exception as e:
+        # 缺少必要字段 / 格式错误 → 视为检查失败，避免线程中断导致状态卡在 Connecting
+        print(f"Error parsing update.json: {e}")
+        STATUS = "Failed"
+        return
 
-    # 可选：-D 完整包（zip）。缺失时回退旧逻辑（仅下载 main.exe）。
-    package = DATA.get("PACKAGE")
-    UPDATE_PACKAGE = package.strip() if isinstance(package, str) and package.strip() else None
-
-    if UPDATE_NUM > main.VERSION_NUM or DATA["TYPE"] == "Force":
+    if UPDATE_NUM > main.VERSION_NUM or UPDATE_TYPE == "Force":
         STATUS = "Needed"
     else:
         STATUS = "Latest"

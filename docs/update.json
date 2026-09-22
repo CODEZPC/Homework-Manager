@@ -2,5 +2,6 @@
   "VERSION_NUM": 1008000000,
   "VERSION": "1.8.0",
   "NAME": "自动更新更新，配置文件更新",
-  "TYPE": "Func"
+  "TYPE": "Func",
+  "PACKAGE": "main.zip"
 }
